@@ -9,17 +9,12 @@
         <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>authn-jaxrs-basic</artifactId>
+    <artifactId>authn-password-dummyxample</artifactId>
 
-    <name>Authn :: Jaxrs :: Basic Authentication</name>
-    <description>Jaxrs basic authentication extensions</description>
+    <name>Authn :: Password :: Dummy Example</name>
+    <description>Dummy example implementation for Password SPI</description>
 
     <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>authn-jaxrs-spi</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>authn-password-spi</artifactId>

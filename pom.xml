@@ -5,7 +5,6 @@
     <groupId>io.codeleaf.authn</groupId>
     <artifactId>authn</artifactId>
     <version>0.1.0</version>
-
     <packaging>pom</packaging>
 
     <name>Authentication Library</name>
@@ -20,6 +19,8 @@
         <module>api</module>
         <module>jaxrs/spi</module>
         <module>jaxrs/basic</module>
+        <module>password/spi</module>
+        <module>password/dummyexample</module>
     </modules>
 
     <licenses>

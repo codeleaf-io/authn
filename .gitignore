@@ -1,0 +1,7 @@
+.idea
+*.iml
+jaxrs/basic/target
+jaxrs/spi/target
+api/target
+password/dummyexample/target
+password/spi/target
