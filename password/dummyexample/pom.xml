@@ -6,10 +6,9 @@
         <groupId>io.codeleaf.authn</groupId>
         <artifactId>authn</artifactId>
         <version>0.1.0</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>authn-password-dummyxample</artifactId>
+    <artifactId>authn-password-dummyexample</artifactId>
 
     <name>Authn :: Password :: Dummy Example</name>
     <description>Dummy example implementation for Password SPI</description>

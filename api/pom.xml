@@ -13,4 +13,12 @@
     <name>Authn :: API</name>
     <description>Interface to the Authentication Library</description>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.codeleaf.common</groupId>
+            <artifactId>common-utils</artifactId>
+            <version>${leaf-common.version}</version>
+        </dependency>
+    </dependencies>
+
 </project>

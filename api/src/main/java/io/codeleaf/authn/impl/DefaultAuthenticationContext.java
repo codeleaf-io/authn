@@ -9,11 +9,6 @@ import java.util.Objects;
 
 public class DefaultAuthenticationContext implements AuthenticationContext {
 
-    public static DefaultAuthenticationContext create(String identity) {
-        Objects.requireNonNull(identity);
-        return new DefaultAuthenticationContext(() -> identity, Collections.emptyMap(), false);
-    }
-
     private final Principal principal;
     private final Map<String, Object> attributes;
     private final boolean isSecure;
@@ -37,5 +32,10 @@ public class DefaultAuthenticationContext implements AuthenticationContext {
     @Override
     public boolean isSecure() {
         return isSecure;
+    }
+
+    public static DefaultAuthenticationContext create(String identity) {
+        Objects.requireNonNull(identity);
+        return new DefaultAuthenticationContext(() -> identity, Collections.emptyMap(), false);
     }
 }

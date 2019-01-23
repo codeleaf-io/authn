@@ -6,7 +6,6 @@
         <groupId>io.codeleaf.authn</groupId>
         <artifactId>authn</artifactId>
         <version>0.1.0</version>
-        <relativePath>../..</relativePath>
     </parent>
 
     <artifactId>authn-jaxrs-basic</artifactId>
