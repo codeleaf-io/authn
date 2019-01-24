@@ -30,7 +30,7 @@ public final class BasicJaxrsRequestAuthenticator implements JaxrsRequestAuthent
         AuthenticationContext authenticationContext = null;
 
         if (basicAuthnHeaderValue != null && !basicAuthnHeaderValue.isEmpty() && basicAuthnHeaderValue.startsWith(HEADER_VALUE_PREFIX)) {
-            String valueDecoded = new String(Base64.getDecoder().decode(basicAuthnHeaderValue.substring(HEADER_VALUE_PREFIX.length() - 1)));
+            String valueDecoded = new String(Base64.getDecoder().decode(basicAuthnHeaderValue.substring(HEADER_VALUE_PREFIX.length())));
             if (valueDecoded != null && !valueDecoded.isEmpty() && valueDecoded.split(SEPARATOR).length == 2) {
                 String[] userPasswordArray = valueDecoded.split(SEPARATOR);
                 authenticationContext = passwordRequestAuthenticator.authenticate(userPasswordArray[0], userPasswordArray[1]);
