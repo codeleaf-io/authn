@@ -1,0 +1,3 @@
+io/codeleaf/authn/password/dummy/DummyPasswordRequestAuthenticator.class
+io/codeleaf/authn/password/dummy/DummyConfigurationFactory.class
+io/codeleaf/authn/password/dummy/DummyConfiguration.class
