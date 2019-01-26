@@ -12,10 +12,11 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.container.ContainerRequestContext;
 import java.nio.charset.Charset;
 import java.util.Base64;
+import java.util.Objects;
 
-public final class BasicJaxrsRequestAuthenticator implements JaxrsRequestAuthenticator {
+public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BasicJaxrsRequestAuthenticator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BasicAuthenticator.class);
 
     private static final Charset UTF8 = Charset.forName("UTF-8");
     private static final String HEADER_VALUE_PREFIX = "Basic ";
@@ -23,17 +24,14 @@ public final class BasicJaxrsRequestAuthenticator implements JaxrsRequestAuthent
     private static final String SEPARATOR = ":";
     private final PasswordRequestAuthenticator passwordRequestAuthenticator;
 
-    public BasicJaxrsRequestAuthenticator() {
-        this(SingletonServiceLoader.load(PasswordRequestAuthenticator.class));
-    }
-
-    public BasicJaxrsRequestAuthenticator(PasswordRequestAuthenticator passwordRequestAuthenticator) {
+    public BasicAuthenticator(PasswordRequestAuthenticator passwordRequestAuthenticator) {
         this.passwordRequestAuthenticator = passwordRequestAuthenticator;
     }
 
     @Override
     public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         Credentials credentials = extractCredentials(requestContext);
+        LOGGER.debug("Found credentials: " + (credentials != null));
         return credentials != null ? passwordRequestAuthenticator.authenticate(credentials.getUserName(), credentials.getPassword()) : null;
     }
 
@@ -54,5 +52,14 @@ public final class BasicJaxrsRequestAuthenticator implements JaxrsRequestAuthent
             LOGGER.warn(cause.getMessage());
             return null;
         }
+    }
+
+    public BasicAuthenticator() {
+        this(SingletonServiceLoader.load(PasswordRequestAuthenticator.class));
+    }
+
+    public static BasicAuthenticator create(BasicConfiguration configuration) {
+        Objects.requireNonNull(configuration);
+        return new BasicAuthenticator(configuration.getAuthenticator());
     }
 }

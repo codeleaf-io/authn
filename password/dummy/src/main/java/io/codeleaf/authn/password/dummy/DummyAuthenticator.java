@@ -12,14 +12,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Objects;
 
-public final class DummyPasswordRequestAuthenticator implements PasswordRequestAuthenticator {
+public final class DummyAuthenticator implements PasswordRequestAuthenticator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DummyPasswordRequestAuthenticator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DummyAuthenticator.class);
 
     private final String userName;
     private final String password;
 
-    private DummyPasswordRequestAuthenticator(String userName, String password) {
+    private DummyAuthenticator(String userName, String password) {
         this.userName = userName;
         this.password = password;
     }
@@ -41,17 +41,22 @@ public final class DummyPasswordRequestAuthenticator implements PasswordRequestA
         return matches ? DefaultAuthenticationContext.create(userName) : null;
     }
 
-    public DummyPasswordRequestAuthenticator() throws ConfigurationException, IOException {
+    public DummyAuthenticator() throws ConfigurationException, IOException {
         this(ConfigurationProvider.get().getConfiguration(DummyConfiguration.class));
     }
 
-    public DummyPasswordRequestAuthenticator(DummyConfiguration dummyConfiguration) {
+    public DummyAuthenticator(DummyConfiguration dummyConfiguration) {
         this(dummyConfiguration.getUserName(), dummyConfiguration.getPassword());
     }
 
-    public static DummyPasswordRequestAuthenticator create(String userName, String password) {
+    public static DummyAuthenticator create(String userName, String password) {
         Objects.requireNonNull(userName);
         Objects.requireNonNull(password);
-        return new DummyPasswordRequestAuthenticator(userName, password);
+        return new DummyAuthenticator(userName, password);
+    }
+
+    public static DummyAuthenticator create(DummyConfiguration configuration) {
+        Objects.requireNonNull(configuration);
+        return new DummyAuthenticator(configuration);
     }
 }

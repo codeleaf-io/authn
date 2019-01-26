@@ -1,4 +1,4 @@
-package io.codeleaf.authn.jaxrs.spi;
+package io.codeleaf.authn.jaxrs.filters;
 
 import io.codeleaf.authn.impl.ThreadLocalAuthenticationContextManager;
 
@@ -16,7 +16,7 @@ public final class JaxrsAuthenticationResponseFilter implements ContainerRespons
     }
 
     @Override
-    public void filter(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) throws IOException {
+    public void filter(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
         authenticationContextManager.clearAuthenticationContext();
     }
 }

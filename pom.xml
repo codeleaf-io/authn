@@ -17,6 +17,7 @@
 
     <modules>
         <module>api</module>
+        <module>jaxrs/api</module>
         <module>jaxrs/spi</module>
         <module>jaxrs/basic</module>
         <module>password/spi</module>
