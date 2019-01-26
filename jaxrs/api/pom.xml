@@ -1,0 +1,49 @@
+<project>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.codeleaf.authn</groupId>
+        <artifactId>authn</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <artifactId>authn-jaxrs-api</artifactId>
+
+    <name>Authn :: Jaxrs :: API</name>
+    <description>API for Jaxrs registration</description>
+
+    <properties>
+        <jaxrs.version>2.1</jaxrs.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>authn-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>authn-jaxrs-spi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>${jaxrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.25</version>
+        </dependency>
+        <dependency>
+            <groupId>io.codeleaf.config</groupId>
+            <artifactId>config-api</artifactId>
+            <version>${leaf-config.version}</version>
+        </dependency>
+    </dependencies>
+
+</project>

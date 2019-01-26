@@ -1,0 +1,41 @@
+<project>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.codeleaf.release</groupId>
+        <artifactId>release</artifactId>
+        <version>0.1.0</version>
+    </parent>
+
+    <groupId>io.codeleaf.authn</groupId>
+    <artifactId>authn</artifactId>
+    <version>0.1.0</version>
+    <packaging>pom</packaging>
+
+    <name>Authentication Library</name>
+
+    <modules>
+        <module>api</module>
+        <module>jaxrs/api</module>
+        <module>jaxrs/spi</module>
+        <module>jaxrs/basic</module>
+        <module>password/spi</module>
+        <module>password/dummy</module>
+    </modules>
+
+    <developers>
+        <developer>
+            <name>Deepak Shingan</name>
+            <email>deepak.shingan@gmail.com</email>
+            <organization>Deepak Shingan</organization>
+        </developer>
+        <developer>
+            <name>Tom Burger</name>
+            <email>tvburger@gmail.com</email>
+            <organization>TVBurger B.V.</organization>
+            <organizationUrl>http://www.tvburger.net/</organizationUrl>
+        </developer>
+    </developers>
+
+</project>

@@ -1,0 +1,25 @@
+<project>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.codeleaf.authn</groupId>
+        <artifactId>authn</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <artifactId>authn-password-spi</artifactId>
+
+    <name>Authn :: Password :: Service Provider Interface</name>
+    <description>Service Provider interface for Password extensions</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>authn-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+</project>

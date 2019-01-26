@@ -1,0 +1,34 @@
+<project>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.codeleaf.authn</groupId>
+        <artifactId>authn</artifactId>
+        <version>0.1.0</version>
+    </parent>
+
+    <artifactId>authn-password-dummy</artifactId>
+
+    <name>Authn :: Password :: Dummy</name>
+    <description>Dummy implementation for Password SPI</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>authn-password-spi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.codeleaf.config</groupId>
+            <artifactId>config-api</artifactId>
+            <version>${leaf-config.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.25</version>
+        </dependency>
+    </dependencies>
+
+</project>
