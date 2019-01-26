@@ -1,7 +1,8 @@
-package io.codeleaf.authn.jaxrs.config;
+package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
+import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.config.Configuration;
 import io.codeleaf.config.ConfigurationNotFoundException;
 import io.codeleaf.config.ConfigurationProvider;
@@ -11,32 +12,36 @@ import io.codeleaf.config.spec.InvalidSpecificationException;
 import io.codeleaf.config.spec.SettingNotFoundException;
 import io.codeleaf.config.spec.Specification;
 import io.codeleaf.config.spec.impl.MapSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-public final class JaxrsAuthenticationConfigurationFactory extends AbstractConfigurationFactory<JaxrsAuthenticationConfiguration> {
+public final class AuthenticationConfigurationFactory extends AbstractConfigurationFactory<AuthenticationConfiguration> {
 
-    public JaxrsAuthenticationConfigurationFactory() {
-        super(JaxrsAuthenticationConfiguration.getDefault());
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationConfigurationFactory.class);
+
+    public AuthenticationConfigurationFactory() {
+        super(AuthenticationConfiguration.getDefault());
     }
 
     @Override
-    protected JaxrsAuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
-        Map<String, JaxrsAuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
+    protected AuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+        Map<String, AuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
         for (String authenticatorName : specification.getChilds("authenticators")) {
             authenticators.put(authenticatorName, parseAuthenticator(authenticatorName, specification));
         }
-        List<JaxrsAuthenticationConfiguration.Zone> zones = new ArrayList<>();
+        List<AuthenticationConfiguration.Zone> zones = new ArrayList<>();
         for (String zoneName : specification.getChilds("zones")) {
             zones.add(parseZone(zoneName, specification, authenticators));
         }
-        return JaxrsAuthenticationConfiguration.create(zones, authenticators);
+        return AuthenticationConfiguration.create(zones, authenticators);
     }
 
-    private JaxrsAuthenticationConfiguration.Zone parseZone(String zoneName, Specification specification, Map<String, JaxrsAuthenticationConfiguration.Authenticator> authenticators) throws SettingNotFoundException, InvalidSettingException {
-        return new JaxrsAuthenticationConfiguration.Zone(
+    private AuthenticationConfiguration.Zone parseZone(String zoneName, Specification specification, Map<String, AuthenticationConfiguration.Authenticator> authenticators) throws SettingNotFoundException, InvalidSettingException {
+        return new AuthenticationConfiguration.Zone(
                 zoneName,
                 parsePolicy(specification, specification.getSetting("zones", zoneName, "policy")),
                 parseEndpoints(specification, specification.getSetting("zones", zoneName, "endpoints")),
@@ -83,7 +88,7 @@ public final class JaxrsAuthenticationConfigurationFactory extends AbstractConfi
         return endpoints;
     }
 
-    private JaxrsAuthenticationConfiguration.Authenticator parseAuthenticator(Specification specification, Specification.Setting setting, Map<String, JaxrsAuthenticationConfiguration.Authenticator> authenticators) throws InvalidSettingException {
+    private AuthenticationConfiguration.Authenticator parseAuthenticator(Specification specification, Specification.Setting setting, Map<String, AuthenticationConfiguration.Authenticator> authenticators) throws InvalidSettingException {
         if (!(setting.getValue() instanceof String)) {
             throw new InvalidSettingException(specification, setting, "Must be a String!");
         }
@@ -94,8 +99,8 @@ public final class JaxrsAuthenticationConfigurationFactory extends AbstractConfi
         return authenticators.get(authenticatorName);
     }
 
-    private JaxrsAuthenticationConfiguration.Authenticator parseAuthenticator(String authenticatorName, Specification specification) throws InvalidSpecificationException {
-        JaxrsAuthenticationConfiguration.Authenticator authenticator = new JaxrsAuthenticationConfiguration.Authenticator(
+    private AuthenticationConfiguration.Authenticator parseAuthenticator(String authenticatorName, Specification specification) throws InvalidSpecificationException {
+        AuthenticationConfiguration.Authenticator authenticator = new AuthenticationConfiguration.Authenticator(
                 authenticatorName,
                 parseClass(specification, specification.getSetting("authenticators", authenticatorName, "implementation")),
                 parseAuthenticationConfiguration(authenticatorName, specification));
@@ -129,14 +134,15 @@ public final class JaxrsAuthenticationConfigurationFactory extends AbstractConfi
         }
     }
 
-    private void initializeAuthenticator(Specification specification, JaxrsAuthenticationConfiguration.Authenticator authenticator) throws InvalidSpecificationException {
+    private void initializeAuthenticator(Specification specification, AuthenticationConfiguration.Authenticator authenticator) throws InvalidSpecificationException {
         try {
-            System.out.println(authenticator.getName());
+            LOGGER.debug("Initializing authenticator: " + authenticator.getName());
             Class<? extends Configuration> configClass = authenticator.getConfiguration().getClass();
             Method method = authenticator.getImplementationClass().getMethod("create", configClass);
             Object instance = method.invoke(null, authenticator.getConfiguration());
             AuthenticatorRegistry.register(authenticator.getName(), instance);
         } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException cause) {
+            LOGGER.error("Failed to initialize authenticator: " + cause.getMessage());
             throw new InvalidSpecificationException(specification, cause.getMessage(), cause);
         }
     }

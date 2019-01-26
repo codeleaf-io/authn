@@ -6,6 +6,8 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Authentication {
+
     AuthenticationPolicy value() default AuthenticationPolicy.REQUIRED;
+
     String authenticator() default "";
 }

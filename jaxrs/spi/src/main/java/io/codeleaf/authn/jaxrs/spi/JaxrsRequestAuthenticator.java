@@ -7,5 +7,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 
 public interface JaxrsRequestAuthenticator {
 
+    String getAuthenticationScheme();
+
     AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException;
+
 }

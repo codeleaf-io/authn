@@ -1,16 +1,15 @@
-package io.codeleaf.authn.jaxrs.config;
+package io.codeleaf.authn.jaxrs;
 
-import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.config.Configuration;
 
 import java.util.*;
 
-public final class JaxrsAuthenticationConfiguration implements Configuration {
+public final class AuthenticationConfiguration implements Configuration {
 
     private final List<Zone> zones;
     private final Map<String, Authenticator> authenticators;
 
-    private JaxrsAuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators) {
+    private AuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators) {
         this.zones = zones;
         this.authenticators = authenticators;
     }
@@ -23,28 +22,28 @@ public final class JaxrsAuthenticationConfiguration implements Configuration {
         return authenticators;
     }
 
-    public static JaxrsAuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators) {
+    public static AuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators) {
         Objects.requireNonNull(zones);
         Objects.requireNonNull(authenticators);
-        return new JaxrsAuthenticationConfiguration(
+        return new AuthenticationConfiguration(
                 Collections.unmodifiableList(new ArrayList<>(zones)),
                 Collections.unmodifiableMap(new LinkedHashMap<>(authenticators)));
     }
 
-    private static final JaxrsAuthenticationConfiguration DEFAULT = create(Collections.emptyList(), Collections.emptyMap());
+    private static final AuthenticationConfiguration DEFAULT = create(Collections.emptyList(), Collections.emptyMap());
 
-    public static final JaxrsAuthenticationConfiguration getDefault() {
+    public static final AuthenticationConfiguration getDefault() {
         return DEFAULT;
     }
 
-    public static class Zone {
+    public static final class Zone {
 
         private final String name;
         private final AuthenticationPolicy policy;
         private final List<String> endpoints;
         private final Authenticator authenticator;
 
-        Zone(String name, AuthenticationPolicy policy, List<String> endpoints, Authenticator authenticator) {
+        public Zone(String name, AuthenticationPolicy policy, List<String> endpoints, Authenticator authenticator) {
             this.name = name;
             this.policy = policy;
             this.endpoints = endpoints;
@@ -68,13 +67,13 @@ public final class JaxrsAuthenticationConfiguration implements Configuration {
         }
     }
 
-    public static class Authenticator {
+    public static final class Authenticator {
 
         private final String name;
         private final Class<?> implementationClass;
         private final Configuration configuration;
 
-        Authenticator(String name, Class<?> implementationClass, Configuration configuration) {
+        public Authenticator(String name, Class<?> implementationClass, Configuration configuration) {
             this.name = name;
             this.implementationClass = implementationClass;
             this.configuration = configuration;
