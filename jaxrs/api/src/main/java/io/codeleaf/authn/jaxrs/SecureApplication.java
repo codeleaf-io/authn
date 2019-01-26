@@ -1,7 +1,5 @@
 package io.codeleaf.authn.jaxrs;
 
-import io.codeleaf.authn.jaxrs.filters.JaxrsAuthenticationFilterFactory;
-
 import javax.ws.rs.core.Application;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -9,11 +7,11 @@ import java.util.Set;
 
 public class SecureApplication extends Application {
 
-    private final JaxrsAuthenticationFilterFactory factory;
+    private final AuthenticationFilterFactory factory;
 
     public SecureApplication() {
         try {
-            this.factory = JaxrsAuthenticationFilterFactory.create();
+            this.factory = AuthenticationFilterFactory.create();
         } catch (Exception cause) {
             throw new ExceptionInInitializerError(cause);
         }
