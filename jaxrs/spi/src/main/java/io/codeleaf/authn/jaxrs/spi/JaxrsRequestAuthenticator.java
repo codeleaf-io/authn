@@ -23,4 +23,7 @@ public interface JaxrsRequestAuthenticator {
 
     AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException;
 
+    default Object getResource() {
+        return null;
+    }
 }

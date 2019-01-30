@@ -1,8 +1,6 @@
 package io.codeleaf.authn.impl;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public final class AuthenticatorRegistry {
 
@@ -22,6 +20,16 @@ public final class AuthenticatorRegistry {
             throw new IllegalArgumentException();
         }
         return authenticatorType.cast(authenticator);
+    }
+
+    public static Set<String> getNames(Class<?> authenticatorType) {
+        Set<String> names = new LinkedHashSet<>();
+        for (Map.Entry<String, Object> entry : authenticators.entrySet()) {
+            if (authenticatorType.isAssignableFrom(entry.getValue().getClass())) {
+                names.add(entry.getKey());
+            }
+        }
+        return names;
     }
 
     public static Object lookup(String name) {
