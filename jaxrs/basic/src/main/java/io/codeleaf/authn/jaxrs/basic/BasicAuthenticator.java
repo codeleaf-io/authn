@@ -44,7 +44,7 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
         try {
             Credentials credentials;
             String basicAuthnHeaderValue = requestContext.getHeaderString(HEADER_KEY);
-            if (basicAuthnHeaderValue != null && !basicAuthnHeaderValue.isEmpty() && basicAuthnHeaderValue.startsWith(HEADER_VALUE_PREFIX)) {
+            if (basicAuthnHeaderValue != null && basicAuthnHeaderValue.startsWith(HEADER_VALUE_PREFIX)) {
                 byte[] byteSequence = Base64.getDecoder().decode(basicAuthnHeaderValue.substring(HEADER_VALUE_PREFIX.length()));
                 String decodedValue = new String(byteSequence, UTF8);
                 String[] parts = decodedValue.split(SEPARATOR);

@@ -5,8 +5,8 @@ import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.impl.ThreadLocalAuthenticationContextManager;
 import io.codeleaf.authn.jaxrs.Authentication;
-import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
+import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
+import java.net.URISyntaxException;
 import java.security.Principal;
 
 public final class AuthenticationRequestFilter implements ContainerRequestFilter {
@@ -61,6 +62,9 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
                 case OPTIONAL:
                     handleOptionalPolicy(authenticatorName, containerRequestContext);
                     break;
+                case REDIRECT:
+                    handleRedirectPolicy(authenticatorName, containerRequestContext);
+                    break;
                 case REQUIRED:
                     handleRequiredPolicy(authenticatorName, containerRequestContext);
                     break;
@@ -68,7 +72,7 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
                     LOGGER.error("Aborting request because we have invalid authentication policy!");
                     containerRequestContext.abortWith(SERVER_ERROR);
             }
-        } catch (IllegalStateException cause) {
+        } catch (URISyntaxException | IllegalStateException cause) {
             containerRequestContext.abortWith(SERVER_ERROR);
         }
     }
@@ -98,6 +102,26 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
         JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
         authenticate(authenticator, containerRequestContext);
         LOGGER.debug("Policy is OPTIONAL, we are " + (!AuthenticationContext.isAuthenticated() ? "NOT " : "") + "authenticated");
+    }
+
+
+    private void handleRedirectPolicy(String authenticatorName, ContainerRequestContext containerRequestContext) throws URISyntaxException {
+        if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
+            LOGGER.warn("Policy is REDIRECT, no JaxrsRequestAuthenticator implementation found with name: " + authenticatorName + "; aborting request");
+            containerRequestContext.abortWith(UNAUTHORIZED);
+            return;
+        }
+        LOGGER.debug(String.format("Authenticate using authenticator '%s'", authenticatorName));
+        JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
+        authenticate(authenticator, containerRequestContext);
+        if (AuthenticationContext.isAuthenticated()) {
+            LOGGER.debug("Policy is REQUIRED, we are authenticated");
+        } else {
+            LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; redirecting request");
+            containerRequestContext.abortWith(Response.status(430)
+                    .header("Access-Control-Expose-Headers", "Location")
+                    .location(authenticator.getLoginURI()).build());
+        }
     }
 
     private void handleRequiredPolicy(String authenticatorName, ContainerRequestContext containerRequestContext) {
