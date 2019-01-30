@@ -1,8 +1,8 @@
 package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
-import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
+import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.config.Configuration;
 import io.codeleaf.config.ConfigurationNotFoundException;
 import io.codeleaf.config.ConfigurationProvider;
@@ -59,6 +59,9 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
                 break;
             case "optional":
                 policy = AuthenticationPolicy.OPTIONAL;
+                break;
+            case "redirect":
+                policy = AuthenticationPolicy.REDIRECT;
                 break;
             case "required":
                 policy = AuthenticationPolicy.REQUIRED;

@@ -20,6 +20,7 @@
         <module>jaxrs/api</module>
         <module>jaxrs/spi</module>
         <module>jaxrs/basic</module>
+        <module>jaxrs/oauth</module>
         <module>password/spi</module>
         <module>password/dummy</module>
     </modules>
