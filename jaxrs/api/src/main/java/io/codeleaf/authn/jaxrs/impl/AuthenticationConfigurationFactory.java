@@ -13,6 +13,7 @@ import io.codeleaf.config.spec.InvalidSpecificationException;
 import io.codeleaf.config.spec.SettingNotFoundException;
 import io.codeleaf.config.spec.Specification;
 import io.codeleaf.config.spec.impl.MapSpecification;
+import io.codeleaf.config.util.Specifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,9 +69,6 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
             case "optional":
                 policy = AuthenticationPolicy.OPTIONAL;
                 break;
-            case "redirect":
-                policy = AuthenticationPolicy.REDIRECT;
-                break;
             case "required":
                 policy = AuthenticationPolicy.REQUIRED;
                 break;
@@ -111,9 +109,16 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
     }
 
     private AuthenticationConfiguration.Authenticator parseAuthenticator(String authenticatorName, Specification specification) throws InvalidSpecificationException {
+        String onFailure;
+        if (specification.hasSetting("authenticators", authenticatorName, "onFailure")) {
+            onFailure = Specifications.parseString(specification, "authenticators", authenticatorName, "onFailure");
+        } else {
+            onFailure = null;
+        }
         AuthenticationConfiguration.Authenticator authenticator = new AuthenticationConfiguration.Authenticator(
                 authenticatorName,
                 parseClass(specification, specification.getSetting("authenticators", authenticatorName, "implementation")),
+                onFailure,
                 parseAuthenticationConfiguration(authenticatorName, specification));
         initializeAuthenticator(specification, authenticator);
         return authenticator;
