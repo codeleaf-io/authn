@@ -20,6 +20,8 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import java.net.URISyntaxException;
 import java.security.Principal;
+import java.util.Collections;
+import java.util.List;
 
 public final class AuthenticationRequestFilter implements ContainerRequestFilter {
 
@@ -62,9 +64,6 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
                 case OPTIONAL:
                     handleOptionalPolicy(authenticatorName, containerRequestContext);
                     break;
-                case REDIRECT:
-                    handleRedirectPolicy(authenticatorName, containerRequestContext);
-                    break;
                 case REQUIRED:
                     handleRequiredPolicy(authenticatorName, containerRequestContext);
                     break;
@@ -72,7 +71,7 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
                     LOGGER.error("Aborting request because we have invalid authentication policy!");
                     containerRequestContext.abortWith(SERVER_ERROR);
             }
-        } catch (URISyntaxException | IllegalStateException cause) {
+        } catch (IllegalStateException cause) {
             containerRequestContext.abortWith(SERVER_ERROR);
         }
     }
@@ -117,10 +116,8 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
         if (AuthenticationContext.isAuthenticated()) {
             LOGGER.debug("Policy is REQUIRED, we are authenticated");
         } else {
-            LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; redirecting request");
-            containerRequestContext.abortWith(Response.status(430)
-                    .header("Access-Control-Expose-Headers", "Location")
-                    .location(authenticator.getLoginURI()).build());
+            LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request with UNAUTHORIZED");
+            containerRequestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
         }
     }
 
@@ -132,12 +129,22 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
         }
         LOGGER.debug(String.format("Authenticate using authenticator '%s'", authenticatorName));
         JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
-        authenticate(authenticator, containerRequestContext);
+        authenticate(Collections.singletonList(authenticator), containerRequestContext);
         if (AuthenticationContext.isAuthenticated()) {
             LOGGER.debug("Policy is REQUIRED, we are authenticated");
         } else {
             LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request");
             containerRequestContext.abortWith(UNAUTHORIZED);
+        }
+    }
+
+    private void authenticate(List<JaxrsRequestAuthenticator> authenticators, ContainerRequestContext containerRequestContext) {
+        for (JaxrsRequestAuthenticator authenticator : authenticators) {
+            authenticate(authenticator, containerRequestContext);
+            if (containerRequestContext.getSecurityContext() != null
+                    || authenticator.handleNotAuthenticated(containerRequestContext)) {
+                break;
+            }
         }
     }
 

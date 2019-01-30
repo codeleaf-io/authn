@@ -71,11 +71,13 @@ public final class AuthenticationConfiguration implements Configuration {
 
         private final String name;
         private final Class<?> implementationClass;
+        private final String onFailure;
         private final Configuration configuration;
 
-        public Authenticator(String name, Class<?> implementationClass, Configuration configuration) {
+        public Authenticator(String name, Class<?> implementationClass, String onFailure, Configuration configuration) {
             this.name = name;
             this.implementationClass = implementationClass;
+            this.onFailure = onFailure;
             this.configuration = configuration;
         }
 
@@ -85,6 +87,10 @@ public final class AuthenticationConfiguration implements Configuration {
 
         public Class<?> getImplementationClass() {
             return implementationClass;
+        }
+
+        public String getOnFailure() {
+            return onFailure;
         }
 
         public Configuration getConfiguration() {

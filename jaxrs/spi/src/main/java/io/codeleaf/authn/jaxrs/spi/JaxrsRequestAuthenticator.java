@@ -4,24 +4,25 @@ import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
 
 import javax.ws.rs.container.ContainerRequestContext;
-import java.net.URI;
-import java.net.URISyntaxException;
+import javax.ws.rs.core.Response;
 
 public interface JaxrsRequestAuthenticator {
-
-    default URI getLoginURI() throws URISyntaxException {
-        System.out.println("returning null login URI.");
-        return null;
-    }
-
-    default URI getLogoutURI() {
-        System.out.println("returning null logout URI.");
-        return null;
-    }
 
     String getAuthenticationScheme();
 
     AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException;
+
+    /**
+     * Returns <code>false</code> when we want to continue to the next configured authenticator.
+     * Returns <code>true</code> when would like to abort, and send the Response as defined using
+     * {@link ContainerRequestContext#abortWith(Response)} to the client.
+     *
+     * @param requestContext
+     * @return
+     */
+    default boolean handleNotAuthenticated(ContainerRequestContext requestContext) {
+        return false;
+    }
 
     default Object getResource() {
         return null;

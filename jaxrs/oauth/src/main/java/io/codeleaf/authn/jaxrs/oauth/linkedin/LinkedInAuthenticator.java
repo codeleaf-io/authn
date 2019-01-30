@@ -2,15 +2,14 @@ package io.codeleaf.authn.jaxrs.oauth.linkedin;
 
 import com.github.scribejava.core.oauth.OAuth20Service;
 import io.codeleaf.authn.AuthenticationContext;
-import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.impl.DefaultAuthenticationContext;
 import io.codeleaf.authn.jaxrs.oauth.OAuthAuthenticator;
 import io.codeleaf.authn.jaxrs.oauth.OAuthConfiguration;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +35,7 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
     }
 
     @Override
-    public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
+    public AuthenticationContext authenticate(ContainerRequestContext requestContext) {
         String authorizationToken = requestContext.getHeaderString(HEADER_KEY);
         AuthenticationContext authenticationContext;
         if (authorizationToken != null && authorizationToken.startsWith(HEADER_VALUE_PREFIX) && requestContext.getCookies().get(LinkedInCookie.COOKIE_NAME) != null) {
@@ -59,8 +58,9 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
     }
 
     @Override
-    public URI getLoginURI() throws URISyntaxException {
-        return new URI(linkedInService.getAuthorizationUrl());
+    public boolean handleNotAuthenticated(ContainerRequestContext requestContext) {
+        requestContext.abortWith(Response.temporaryRedirect(URI.create(linkedInService.getAuthorizationUrl())).build());
+        return true;
     }
 
     @Override
