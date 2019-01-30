@@ -6,7 +6,8 @@ import javax.ws.rs.core.NewCookie;
 import java.util.HashMap;
 import java.util.Map;
 
-public class LinkedinCookie extends NewCookie {
+public final class LinkedInCookie extends NewCookie {
+
     public static final String COOKIE_NAME = "DATA";
     public static final String TOKEN = "TOKEN";
     public static final String REFRESH_TOKEN = "REFRESH_TOKEN";
@@ -20,7 +21,7 @@ public class LinkedinCookie extends NewCookie {
     private final String tokenType;
     private final Integer expiresIn;
 
-    public LinkedinCookie(String token, String refreshToken, String scope, String tokenType, Integer expiresIn) {
+    public LinkedInCookie(String token, String refreshToken, String scope, String tokenType, Integer expiresIn) {
         super(COOKIE_NAME, StringMapUtil.encodeString(token, refreshToken, scope, tokenType, expiresIn.toString()), "/", null, NewCookie.DEFAULT_VERSION, null, NewCookie.DEFAULT_MAX_AGE, null, true, true);
         this.token = token;
         this.refreshToken = refreshToken;
@@ -29,9 +30,9 @@ public class LinkedinCookie extends NewCookie {
         this.expiresIn = expiresIn;
     }
 
-    public LinkedinCookie(String value) {
+    public LinkedInCookie(String value) {
         super(COOKIE_NAME, value, "/", null, NewCookie.DEFAULT_VERSION, null, NewCookie.DEFAULT_MAX_AGE, null, true, true);
-        Map<String,String> map = StringMapUtil.decodeString(value);
+        Map<String, String> map = StringMapUtil.decodeString(value);
         this.token = map.get(TOKEN);
         this.refreshToken = map.get(REFRESH_TOKEN);
         this.scope = map.get(SCOPE);
@@ -39,7 +40,7 @@ public class LinkedinCookie extends NewCookie {
         this.expiresIn = Integer.parseInt(map.get(EXPIRES_IN));
     }
 
-    public LinkedinCookie(OAuth2AccessToken accessToken) {
+    public LinkedInCookie(OAuth2AccessToken accessToken) {
         super(COOKIE_NAME, StringMapUtil.encodeString(toStringMap(accessToken)), "/", null, NewCookie.DEFAULT_VERSION, null, NewCookie.DEFAULT_MAX_AGE, null, true, true);
         this.token = accessToken.getAccessToken();
         this.refreshToken = accessToken.getRefreshToken();

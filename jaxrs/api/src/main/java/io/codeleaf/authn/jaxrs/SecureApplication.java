@@ -1,5 +1,7 @@
 package io.codeleaf.authn.jaxrs;
 
+import io.codeleaf.authn.jaxrs.impl.AuthenticatorResources;
+
 import javax.ws.rs.core.Application;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -31,6 +33,7 @@ public class SecureApplication extends Application {
 
     public final Set<Object> getSingletons() {
         Set<Object> singletons = new LinkedHashSet<>();
+        singletons.add(AuthenticatorResources.create());
         singletons.add(factory.createRequestFilter());
         singletons.addAll(getSecureSingletons());
         singletons.add(factory.createResponseFilter());

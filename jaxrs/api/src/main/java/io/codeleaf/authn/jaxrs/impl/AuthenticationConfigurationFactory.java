@@ -3,6 +3,7 @@ package io.codeleaf.authn.jaxrs.impl;
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
+import io.codeleaf.common.utils.Types;
 import io.codeleaf.config.Configuration;
 import io.codeleaf.config.ConfigurationNotFoundException;
 import io.codeleaf.config.ConfigurationProvider;
@@ -15,6 +16,7 @@ import io.codeleaf.config.spec.impl.MapSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -41,11 +43,17 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
     }
 
     private AuthenticationConfiguration.Zone parseZone(String zoneName, Specification specification, Map<String, AuthenticationConfiguration.Authenticator> authenticators) throws SettingNotFoundException, InvalidSettingException {
-        return new AuthenticationConfiguration.Zone(
-                zoneName,
-                parsePolicy(specification, specification.getSetting("zones", zoneName, "policy")),
-                parseEndpoints(specification, specification.getSetting("zones", zoneName, "endpoints")),
-                parseAuthenticator(specification, specification.getSetting("zones", zoneName, "authenticator"), authenticators));
+        AuthenticationPolicy policy = parsePolicy(specification, specification.getSetting("zones", zoneName, "policy"));
+        AuthenticationConfiguration.Authenticator authenticator;
+        if (specification.hasSetting("zones", zoneName, "authenticator")) {
+            authenticator = parseAuthenticator(specification, specification.getSetting("zones", zoneName, "authenticator"), authenticators);
+        } else if (policy == AuthenticationPolicy.NONE) {
+            authenticator = null;
+        } else {
+            throw new SettingNotFoundException(specification, Arrays.asList("zones", zoneName, "authenticator"));
+        }
+        List<String> endpoints = parseEndpoints(specification, specification.getSetting("zones", zoneName, "endpoints"));
+        return new AuthenticationConfiguration.Zone(zoneName, policy, endpoints, authenticator);
     }
 
     private AuthenticationPolicy parsePolicy(Specification specification, Specification.Setting setting) throws InvalidSettingException {
@@ -67,7 +75,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
                 policy = AuthenticationPolicy.REQUIRED;
                 break;
             default:
-                throw new InvalidSettingException(specification, setting, "Invalid policy value, must be: none, optional or required!");
+                throw new InvalidSettingException(specification, setting, "Invalid policy value, must be: none, optional, redirect or required!");
         }
         return policy;
     }
@@ -137,14 +145,25 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         }
     }
 
+    /*
+     * First looks at a static create(configuration),
+     * if not found, for a constructor(configuration),
+     * otherwise error.
+     */
     private void initializeAuthenticator(Specification specification, AuthenticationConfiguration.Authenticator authenticator) throws InvalidSpecificationException {
         try {
             LOGGER.debug("Initializing authenticator: " + authenticator.getName());
             Class<? extends Configuration> configClass = authenticator.getConfiguration().getClass();
-            Method method = authenticator.getImplementationClass().getMethod("create", configClass);
-            Object instance = method.invoke(null, authenticator.getConfiguration());
+            Object instance;
+            if (Types.definesStaticMethod(configClass, "create")) {
+                Method method = authenticator.getImplementationClass().getMethod("create", configClass);
+                instance = method.invoke(null, authenticator.getConfiguration());
+            } else {
+                Constructor<?> constructor = Types.getConstructor(configClass, authenticator.getConfiguration().getClass());
+                instance = constructor.newInstance(authenticator.getConfiguration());
+            }
             AuthenticatorRegistry.register(authenticator.getName(), instance);
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException cause) {
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | IllegalStateException | InvocationTargetException cause) {
             LOGGER.error("Failed to initialize authenticator: " + cause.getMessage());
             throw new InvalidSpecificationException(specification, cause.getMessage(), cause);
         }
