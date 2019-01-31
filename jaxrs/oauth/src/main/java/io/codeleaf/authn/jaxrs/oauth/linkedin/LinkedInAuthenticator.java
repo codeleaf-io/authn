@@ -8,7 +8,6 @@ import io.codeleaf.authn.jaxrs.oauth.OAuthConfiguration;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +49,7 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
         Cookie cookie = requestContext.getCookies().get(LinkedInCookie.COOKIE_NAME);
         AuthenticationContext authenticationContext = null;
         Map<String, Object> map = new HashMap<>(StringMapUtil.decodeString(cookie.getValue()));
-        LinkedInCookie linkedinCookie = new LinkedInCookie(cookie.getValue());
+        LinkedInCookie linkedinCookie = LinkedInCookie.Factory.create(cookie.getValue());
         if (linkedinCookie.getToken().equals(authorizationToken.substring(HEADER_VALUE_PREFIX.length()))) {
             authenticationContext = new DefaultAuthenticationContext(() -> "Linkedin-" + map.get(LinkedInCookie.TOKEN_TYPE), map, true);
         }
@@ -59,8 +58,12 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
 
     @Override
     public boolean handleNotAuthenticated(ContainerRequestContext requestContext) {
-        requestContext.abortWith(Response.temporaryRedirect(URI.create(linkedInService.getAuthorizationUrl())).build());
         return true;
+    }
+
+    @Override
+    public URI getLoginURI() {
+        return URI.create(linkedInService.getAuthorizationUrl());
     }
 
     @Override
