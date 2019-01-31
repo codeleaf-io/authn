@@ -129,23 +129,32 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
         }
         LOGGER.debug(String.format("Authenticate using authenticator '%s'", authenticatorName));
         JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
-        authenticate(Collections.singletonList(authenticator), containerRequestContext);
+        authenticator = authenticate(Collections.singletonList(authenticator), containerRequestContext);
         if (AuthenticationContext.isAuthenticated()) {
             LOGGER.debug("Policy is REQUIRED, we are authenticated");
         } else {
             LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request");
-            containerRequestContext.abortWith(UNAUTHORIZED);
+            if (authenticator == null || !authenticator.handleNotAuthenticated(containerRequestContext))
+                containerRequestContext.abortWith(UNAUTHORIZED);
+            if (!AuthenticationContext.isAuthenticated() && authenticator != null && authenticator.handleNotAuthenticated(containerRequestContext)) {
+                System.out.println("Redirecting to : " + authenticator.getLoginURI());
+                containerRequestContext.abortWith(Response.status(430)
+                        .header("Access-Control-Expose-Headers", "Location")
+                        .location(authenticator.getLoginURI()).build());
+            }
+
         }
     }
 
-    private void authenticate(List<JaxrsRequestAuthenticator> authenticators, ContainerRequestContext containerRequestContext) {
+    private JaxrsRequestAuthenticator authenticate(List<JaxrsRequestAuthenticator> authenticators, ContainerRequestContext containerRequestContext) {
         for (JaxrsRequestAuthenticator authenticator : authenticators) {
             authenticate(authenticator, containerRequestContext);
-            if (containerRequestContext.getSecurityContext() != null
+            if (AuthenticationContext.isAuthenticated()
                     || authenticator.handleNotAuthenticated(containerRequestContext)) {
-                break;
+                return authenticator;
             }
         }
+        return null;
     }
 
     private void authenticate(JaxrsRequestAuthenticator authenticator, ContainerRequestContext containerRequestContext) {

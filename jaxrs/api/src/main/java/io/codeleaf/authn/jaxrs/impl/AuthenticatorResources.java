@@ -3,12 +3,10 @@ package io.codeleaf.authn.jaxrs.impl;
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Path("auth")
 public final class AuthenticatorResources {
 
     private final Map<String, Object> resources;
@@ -17,9 +15,8 @@ public final class AuthenticatorResources {
         this.resources = resources;
     }
 
-    @Path("{name}/*")
-    public Object getResource(@PathParam("name") String name) {
-        return resources.get(name);
+    public Collection<Object> getAllResources() {
+        return resources.values();
     }
 
     public static AuthenticatorResources create() {

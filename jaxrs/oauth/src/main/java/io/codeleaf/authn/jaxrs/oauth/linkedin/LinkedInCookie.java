@@ -21,8 +21,8 @@ public final class LinkedInCookie extends NewCookie {
     private final String tokenType;
     private final Integer expiresIn;
 
-    public LinkedInCookie(String token, String refreshToken, String scope, String tokenType, Integer expiresIn) {
-        super(COOKIE_NAME, StringMapUtil.encodeString(token, refreshToken, scope, tokenType, expiresIn.toString()), "/", null, NewCookie.DEFAULT_VERSION, null, NewCookie.DEFAULT_MAX_AGE, null, true, true);
+    private LinkedInCookie(String token, String refreshToken, String scope, String tokenType, Integer expiresIn) {
+        super(COOKIE_NAME, StringMapUtil.encodeString(toStringMap(token, refreshToken, scope, tokenType, expiresIn)), "/", "", NewCookie.DEFAULT_VERSION, null, NewCookie.DEFAULT_MAX_AGE, null, true, true);
         this.token = token;
         this.refreshToken = refreshToken;
         this.scope = scope;
@@ -30,32 +30,13 @@ public final class LinkedInCookie extends NewCookie {
         this.expiresIn = expiresIn;
     }
 
-    public LinkedInCookie(String value) {
-        super(COOKIE_NAME, value, "/", null, NewCookie.DEFAULT_VERSION, null, NewCookie.DEFAULT_MAX_AGE, null, true, true);
-        Map<String, String> map = StringMapUtil.decodeString(value);
-        this.token = map.get(TOKEN);
-        this.refreshToken = map.get(REFRESH_TOKEN);
-        this.scope = map.get(SCOPE);
-        this.tokenType = map.get(TOKEN_TYPE);
-        this.expiresIn = Integer.parseInt(map.get(EXPIRES_IN));
-    }
-
-    public LinkedInCookie(OAuth2AccessToken accessToken) {
-        super(COOKIE_NAME, StringMapUtil.encodeString(toStringMap(accessToken)), "/", null, NewCookie.DEFAULT_VERSION, null, NewCookie.DEFAULT_MAX_AGE, null, true, true);
-        this.token = accessToken.getAccessToken();
-        this.refreshToken = accessToken.getRefreshToken();
-        this.scope = accessToken.getScope();
-        this.tokenType = accessToken.getTokenType();
-        this.expiresIn = accessToken.getExpiresIn();
-    }
-
-    private static Map<String, String> toStringMap(OAuth2AccessToken accessToken) {
+    private static Map<String, String> toStringMap(String token, String refreshToken, String scope, String tokenType, Integer expiresIn) {
         Map<String, String> stringMap = new HashMap<>();
-        stringMap.put(TOKEN, accessToken.getAccessToken());
-        stringMap.put(REFRESH_TOKEN, accessToken.getRefreshToken());
-        stringMap.put(SCOPE, accessToken.getScope());
-        stringMap.put(TOKEN_TYPE, accessToken.getTokenType());
-        stringMap.put(EXPIRES_IN, accessToken.getExpiresIn().toString());
+        stringMap.put(TOKEN, token);
+        stringMap.put(REFRESH_TOKEN, refreshToken);
+        stringMap.put(SCOPE, scope);
+        stringMap.put(TOKEN_TYPE, tokenType);
+        stringMap.put(EXPIRES_IN, expiresIn.toString());
         return stringMap;
     }
 
@@ -77,5 +58,25 @@ public final class LinkedInCookie extends NewCookie {
 
     public Integer getExpiresIn() {
         return expiresIn;
+    }
+
+    public static final class Factory {
+
+        public static final LinkedInCookie create(OAuth2AccessToken accessToken) {
+            return new LinkedInCookie(accessToken.getAccessToken(),
+                    accessToken.getRefreshToken(),
+                    accessToken.getScope(),
+                    accessToken.getTokenType(),
+                    accessToken.getExpiresIn());
+        }
+
+        public static final LinkedInCookie create(String value) {
+            Map<String, String> map = StringMapUtil.decodeString(value);
+            return new LinkedInCookie(map.get(TOKEN),
+                    map.get(REFRESH_TOKEN),
+                    map.get(SCOPE),
+                    map.get(TOKEN_TYPE),
+                    Integer.parseInt(map.get(EXPIRES_IN)));
+        }
     }
 }

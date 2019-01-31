@@ -5,8 +5,14 @@ import io.codeleaf.authn.AuthenticationException;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;
+import java.net.URI;
 
 public interface JaxrsRequestAuthenticator {
+
+    default URI getLoginURI() {
+        System.out.println("returning null login url");
+        return null;
+    }
 
     String getAuthenticationScheme();
 

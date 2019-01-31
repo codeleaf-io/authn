@@ -33,7 +33,7 @@ public class SecureApplication extends Application {
 
     public final Set<Object> getSingletons() {
         Set<Object> singletons = new LinkedHashSet<>();
-        singletons.add(AuthenticatorResources.create());
+        singletons.addAll(AuthenticatorResources.create().getAllResources());
         singletons.add(factory.createRequestFilter());
         singletons.addAll(getSecureSingletons());
         singletons.add(factory.createResponseFilter());

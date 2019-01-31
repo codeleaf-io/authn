@@ -1,17 +1,16 @@
 package io.codeleaf.authn.jaxrs.oauth.linkedin;
 
+import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.oauth.OAuth20Service;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 
-@Path("")
+@Produces({"application/json"})
+@Consumes({"application/json"})
+@Path("/auth")
 public final class LinkedInResource {
 
     private final OAuth20Service linkedInService;
@@ -21,13 +20,15 @@ public final class LinkedInResource {
     }
 
     @GET
-    public Response parseAccessTokenResponse(@PathParam("code") String code,
-                                             @PathParam("error") String error,
-                                             @PathParam("error_description") String errorDescription,
-                                             @PathParam("state") String state) throws InterruptedException, ExecutionException, IOException, URISyntaxException {
+    @Path("/linkedin")
+    public Response parseAccessTokenResponse(@QueryParam("code") String code,
+                                             @QueryParam("error") String error,
+                                             @QueryParam("error_description") String errorDescription,
+                                             @QueryParam("state") String state) throws InterruptedException, ExecutionException, IOException {
         if (code != null && !code.isEmpty() && linkedInService.getState().equals(state)) {
-            return Response.seeOther(new URI(linkedInService.getCallback())).cookie(new LinkedInCookie(linkedInService.getAccessToken(code))).build();
+            OAuth2AccessToken accessToken = linkedInService.getAccessToken(code);
+            return Response.status(Response.Status.OK).entity(accessToken).cookie(LinkedInCookie.Factory.create(accessToken)).build();
         }
-        return Response.status(Response.Status.OK).entity("Error :" + error + " Description:" + errorDescription).build();
+        return Response.status(Response.Status.BAD_REQUEST).entity("Error :" + error + " Description:" + errorDescription).build();
     }
 }
