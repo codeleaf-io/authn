@@ -18,7 +18,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
-import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
@@ -103,24 +102,6 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
         LOGGER.debug("Policy is OPTIONAL, we are " + (!AuthenticationContext.isAuthenticated() ? "NOT " : "") + "authenticated");
     }
 
-
-    private void handleRedirectPolicy(String authenticatorName, ContainerRequestContext containerRequestContext) throws URISyntaxException {
-        if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
-            LOGGER.warn("Policy is REDIRECT, no JaxrsRequestAuthenticator implementation found with name: " + authenticatorName + "; aborting request");
-            containerRequestContext.abortWith(UNAUTHORIZED);
-            return;
-        }
-        LOGGER.debug(String.format("Authenticate using authenticator '%s'", authenticatorName));
-        JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
-        authenticate(authenticator, containerRequestContext);
-        if (AuthenticationContext.isAuthenticated()) {
-            LOGGER.debug("Policy is REQUIRED, we are authenticated");
-        } else {
-            LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request with UNAUTHORIZED");
-            containerRequestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
-        }
-    }
-
     private void handleRequiredPolicy(String authenticatorName, ContainerRequestContext containerRequestContext) {
         if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
             LOGGER.warn("Policy is REQUIRED, no JaxrsRequestAuthenticator implementation found with name: " + authenticatorName + "; aborting request");
@@ -138,11 +119,8 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
                 containerRequestContext.abortWith(UNAUTHORIZED);
             if (!AuthenticationContext.isAuthenticated() && authenticator != null && authenticator.handleNotAuthenticated(containerRequestContext)) {
                 System.out.println("Redirecting to : " + authenticator.getLoginURI());
-                containerRequestContext.abortWith(Response.status(430)
-                        .header("Access-Control-Expose-Headers", "Location")
-                        .location(authenticator.getLoginURI()).build());
+                containerRequestContext.abortWith(Response.seeOther(authenticator.getLoginURI()).build());
             }
-
         }
     }
 

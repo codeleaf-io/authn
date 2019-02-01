@@ -2,12 +2,15 @@ package io.codeleaf.authn.jaxrs.oauth.linkedin;
 
 import com.github.scribejava.core.oauth.OAuth20Service;
 import io.codeleaf.authn.AuthenticationContext;
+import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.impl.DefaultAuthenticationContext;
 import io.codeleaf.authn.jaxrs.oauth.OAuthAuthenticator;
 import io.codeleaf.authn.jaxrs.oauth.OAuthConfiguration;
+import io.codeleaf.common.utils.Strings;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,24 +37,28 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
     }
 
     @Override
-    public AuthenticationContext authenticate(ContainerRequestContext requestContext) {
-        String authorizationToken = requestContext.getHeaderString(HEADER_KEY);
-        AuthenticationContext authenticationContext;
-        if (authorizationToken != null && authorizationToken.startsWith(HEADER_VALUE_PREFIX) && requestContext.getCookies().get(LinkedInCookie.COOKIE_NAME) != null) {
-            authenticationContext = getAuthenticationContext(requestContext, authorizationToken);
-        } else {
-            authenticationContext = null;
+    public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
+        try {
+            String authorizationToken = requestContext.getHeaderString(HEADER_KEY);
+            AuthenticationContext authenticationContext;
+            if (authorizationToken != null && authorizationToken.startsWith(HEADER_VALUE_PREFIX) && requestContext.getCookies().get(LinkedInCookie.COOKIE_NAME) != null) {
+                authenticationContext = getAuthenticationContext(requestContext, authorizationToken);
+            } else {
+                authenticationContext = null;
+            }
+            return authenticationContext;
+        } catch (UnsupportedEncodingException cause) {
+            throw new AuthenticationException("Error in encoding string for cookie.", cause);
         }
-        return authenticationContext;
     }
 
-    private AuthenticationContext getAuthenticationContext(ContainerRequestContext requestContext, String authorizationToken) {
+    private AuthenticationContext getAuthenticationContext(ContainerRequestContext requestContext, String authorizationToken) throws UnsupportedEncodingException {
         Cookie cookie = requestContext.getCookies().get(LinkedInCookie.COOKIE_NAME);
         AuthenticationContext authenticationContext = null;
-        Map<String, Object> map = new HashMap<>(StringMapUtil.decodeString(cookie.getValue()));
-        LinkedInCookie linkedinCookie = LinkedInCookie.Factory.create(cookie.getValue());
+        Map<String, Object> map = new HashMap<>(Strings.decodeString(Strings.toDecodeBase64UTF8(cookie.getValue())));
+        LinkedInCookie linkedinCookie = LinkedInCookie.Factory.create(cookie.getValue(), cookie.getDomain());
         if (linkedinCookie.getToken().equals(authorizationToken.substring(HEADER_VALUE_PREFIX.length()))) {
-            authenticationContext = new DefaultAuthenticationContext(() -> "Linkedin-" + map.get(LinkedInCookie.TOKEN_TYPE), map, true);
+            authenticationContext = new DefaultAuthenticationContext(() -> (String) map.get(LinkedInCookie.FIRST_NAME), map, true);
         }
         return authenticationContext;
     }
