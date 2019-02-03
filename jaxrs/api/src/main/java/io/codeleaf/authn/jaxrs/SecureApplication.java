@@ -36,9 +36,9 @@ public class SecureApplication extends Application {
         Set<Object> singletons = new LinkedHashSet<>();
         singletons.addAll(AuthenticatorResources.create().getAllResources());
         singletons.add(factory.createRequestFilter());
-        singletons.addAll(getSecureSingletons());
         singletons.add(factory.createResponseFilter());
         singletons.add(new SecureApplicationCorsFilter());
+        singletons.addAll(getSecureSingletons());
         return singletons;
     }
 }
