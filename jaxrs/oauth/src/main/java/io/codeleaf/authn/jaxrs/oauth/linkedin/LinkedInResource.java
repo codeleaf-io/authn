@@ -9,6 +9,7 @@ import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.common.utils.Strings;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -30,6 +31,7 @@ public final class LinkedInResource {
 
     @GET
     @Path("/linkedin")
+    @Produces(MediaType.TEXT_HTML)
     @Authentication(value = AuthenticationPolicy.OPTIONAL, authenticator = "linkedin")
     public Response parseAccessTokenResponse(@QueryParam("code") String code,
                                              @QueryParam("error") String error,
@@ -66,6 +68,6 @@ public final class LinkedInResource {
     }
 
     private String getEntityString(OAuth2AccessToken accessToken) {
-        return "<script type=\"text/javascript\">window.location.href ='http://cybecore.com</script>";
+        return "<script type=\"text/javascript\">window.location.href ='http://codeleaf.com</script>";
     }
 }
