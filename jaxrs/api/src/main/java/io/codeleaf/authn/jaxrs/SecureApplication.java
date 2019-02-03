@@ -1,6 +1,7 @@
 package io.codeleaf.authn.jaxrs;
 
 import io.codeleaf.authn.jaxrs.impl.AuthenticatorResources;
+import io.codeleaf.authn.jaxrs.impl.SecureApplicationCorsFilter;
 
 import javax.ws.rs.core.Application;
 import java.util.Collections;
@@ -37,6 +38,7 @@ public class SecureApplication extends Application {
         singletons.add(factory.createRequestFilter());
         singletons.addAll(getSecureSingletons());
         singletons.add(factory.createResponseFilter());
+        singletons.add(new SecureApplicationCorsFilter());
         return singletons;
     }
 }
