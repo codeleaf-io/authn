@@ -39,6 +39,12 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.9.6</version>
         </dependency>
+        <dependency>
+            <groupId>io.codeleaf.authn</groupId>
+            <artifactId>authn-jaxrs-api</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>
