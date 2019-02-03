@@ -55,7 +55,6 @@ public final class LinkedInResource {
 
     @GET
     @Path("/linkedin/profile")
-    @Produces(MediaType.TEXT_HTML)
     @Authentication(value = AuthenticationPolicy.REQUIRED, authenticator = "linkedin")
     public Response getLinkedInProfile() throws NotAuthenticatedException, InterruptedException, ExecutionException, IOException {
         String token = AuthenticationContext.get().getIdentity();
