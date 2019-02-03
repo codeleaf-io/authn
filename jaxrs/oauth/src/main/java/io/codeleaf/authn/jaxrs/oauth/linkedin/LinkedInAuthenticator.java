@@ -58,7 +58,7 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
         Map<String, Object> map = new HashMap<>(Strings.decodeString(Strings.toDecodeBase64UTF8(cookie.getValue())));
         LinkedInCookie linkedinCookie = LinkedInCookie.Factory.create(cookie.getValue(), cookie.getDomain());
         if (linkedinCookie.getToken().equals(authorizationToken.substring(HEADER_VALUE_PREFIX.length()))) {
-            authenticationContext = new DefaultAuthenticationContext(() -> (String) map.get(LinkedInCookie.FIRST_NAME), map, true);
+            authenticationContext = new DefaultAuthenticationContext(() -> (String) map.get(LinkedInCookie.TOKEN), map, true);
         }
         return authenticationContext;
     }
