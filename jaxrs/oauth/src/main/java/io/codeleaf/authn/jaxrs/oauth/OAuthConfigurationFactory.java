@@ -22,7 +22,8 @@ public final class OAuthConfigurationFactory extends AbstractConfigurationFactor
                     Specifications.parseString(specification, "clientSecret"),
                     new URI(Specifications.parseString(specification, "redirectUri")),
                     Specifications.parseString(specification, "scope"),
-                    Specifications.parseString(specification, "state"));
+                    Specifications.parseString(specification, "state"),
+                    Specifications.parseString(specification, "landingPageUrl"));
         } catch (URISyntaxException cause) {
             throw new InvalidSpecificationException(specification, "Invalid redirect URI.", cause);
         }

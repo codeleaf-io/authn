@@ -21,17 +21,17 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
     private static final String HEADER_VALUE_PREFIX = "Bearer ";
     private static final String HEADER_KEY = "Authorization";
 
-    private final OAuth20Service linkedInService;
+    private final LinkedInOAuth20Service linkedInService;
     private final LinkedInResource linkedInResource;
 
-    private LinkedInAuthenticator(OAuth20Service linkedInService, LinkedInResource linkedInResource) {
+    private LinkedInAuthenticator(LinkedInOAuth20Service linkedInService, LinkedInResource linkedInResource) {
         this.linkedInService = linkedInService;
         this.linkedInResource = linkedInResource;
     }
 
     public static LinkedInAuthenticator create(OAuthConfiguration configuration) {
         Objects.requireNonNull(configuration);
-        OAuth20Service service = LinkedInServiceFactory.create(configuration);
+        LinkedInOAuth20Service service = LinkedInServiceFactory.create(configuration);
         LinkedInResource resource = new LinkedInResource(service);
         return new LinkedInAuthenticator(service, resource);
     }
