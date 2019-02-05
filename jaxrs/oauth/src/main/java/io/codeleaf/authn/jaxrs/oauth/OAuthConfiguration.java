@@ -11,13 +11,15 @@ public class OAuthConfiguration implements Configuration {
     private final URI redirectUri;
     private final String scope;
     private final String state;
+    private final String landingPageUrl;
 
-    public OAuthConfiguration(String clientId, String clientSecret, URI redirectUri, String scope, String state) {
+    public OAuthConfiguration(String clientId, String clientSecret, URI redirectUri, String scope, String state, String landingPageUrl) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.redirectUri = redirectUri;
         this.scope = scope;
         this.state = state;
+        this.landingPageUrl = landingPageUrl;
     }
 
     public String getClientSecret() {
@@ -38,5 +40,9 @@ public class OAuthConfiguration implements Configuration {
 
     public String getState() {
         return state;
+    }
+
+    public String getLandingPageUrl() {
+        return landingPageUrl;
     }
 }

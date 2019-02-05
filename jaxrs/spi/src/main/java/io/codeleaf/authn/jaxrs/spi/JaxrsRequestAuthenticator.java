@@ -30,7 +30,13 @@ public interface JaxrsRequestAuthenticator {
         return false;
     }
 
+    default boolean onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
+        return false;
+    }
+
     default Object getResource() {
         return null;
     }
+
+
 }

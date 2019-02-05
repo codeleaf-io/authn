@@ -10,12 +10,13 @@ public final class LinkedInServiceFactory {
     private LinkedInServiceFactory() {
     }
 
-    public static OAuth20Service create(OAuthConfiguration configuration) {
-        return new ServiceBuilder(configuration.getClientId())
+    public static LinkedInOAuth20Service create(OAuthConfiguration configuration) {
+        OAuth20Service oAuth20Service = new ServiceBuilder(configuration.getClientId())
                 .apiSecret(configuration.getClientSecret())
                 .scope(configuration.getScope())
                 .callback(configuration.getRedirectUri().toString())
                 .state(configuration.getState())
                 .build(LinkedInApi20.instance());
+        return new LinkedInOAuth20Service(oAuth20Service, configuration.getLandingPageUrl());
     }
 }
