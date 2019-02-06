@@ -8,10 +8,10 @@
         <version>0.1.0</version>
     </parent>
 
-    <artifactId>authn-jaxrs-jwt</artifactId>
+    <artifactId>authn-jaxrs-protocol-header</artifactId>
 
-    <name>Authn :: Jaxrs :: JWT Authentication</name>
-    <description>Jaxrs JWT authentication extensions</description>
+    <name>Authn :: Jaxrs :: Protocol :: Header</name>
+    <description>Jaxrs header protocol</description>
 
     <dependencies>
         <dependency>
@@ -23,11 +23,6 @@
             <groupId>io.codeleaf.config</groupId>
             <artifactId>config-api</artifactId>
             <version>${leaf-config.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.codeleaf.logging</groupId>
-            <artifactId>logging-slf4j</artifactId>
-            <version>${leaf-logging.version}</version>
         </dependency>
     </dependencies>
 

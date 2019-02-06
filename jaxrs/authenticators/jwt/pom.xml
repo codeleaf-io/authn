@@ -6,13 +6,12 @@
         <groupId>io.codeleaf.authn</groupId>
         <artifactId>authn</artifactId>
         <version>0.1.0</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>authn-jaxrs-basic</artifactId>
+    <artifactId>authn-jaxrs-authenticator-jwt</artifactId>
 
-    <name>Authn :: Jaxrs :: Basic Authentication</name>
-    <description>Jaxrs basic authentication extensions</description>
+    <name>Authn :: Jaxrs :: Authenticator :: JWT</name>
+    <description>Jaxrs JWT authentication extensions</description>
 
     <dependencies>
         <dependency>
@@ -21,19 +20,14 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>authn-password-spi</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.codeleaf.config</groupId>
             <artifactId>config-api</artifactId>
             <version>${leaf-config.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+            <groupId>io.codeleaf.logging</groupId>
+            <artifactId>logging-slf4j</artifactId>
+            <version>${leaf-logging.version}</version>
         </dependency>
     </dependencies>
 
