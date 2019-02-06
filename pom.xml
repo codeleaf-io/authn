@@ -19,9 +19,10 @@
         <module>api</module>
         <module>jaxrs/api</module>
         <module>jaxrs/spi</module>
-        <module>jaxrs/basic</module>
-        <module>jaxrs/oauth</module>
-        <module>jaxrs/jwt</module>
+        <module>jaxrs/authenticators/basic</module>
+        <module>jaxrs/authenticators/oauth</module>
+        <module>jaxrs/authenticators/jwt</module>
+        <module>jaxrs/protocols/header</module>
         <module>password/spi</module>
         <module>password/dummy</module>
     </modules>

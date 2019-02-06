@@ -8,10 +8,10 @@
         <version>0.1.0</version>
     </parent>
 
-    <artifactId>authn-jaxrs-basic</artifactId>
+    <artifactId>authn-jaxrs-protocol-header</artifactId>
 
-    <name>Authn :: Jaxrs :: Basic Authentication</name>
-    <description>Jaxrs basic authentication extensions</description>
+    <name>Authn :: Jaxrs :: Protocol :: Header</name>
+    <description>Jaxrs header protocol</description>
 
     <dependencies>
         <dependency>
@@ -20,19 +20,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>authn-password-spi</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.codeleaf.config</groupId>
             <artifactId>config-api</artifactId>
             <version>${leaf-config.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
         </dependency>
     </dependencies>
 

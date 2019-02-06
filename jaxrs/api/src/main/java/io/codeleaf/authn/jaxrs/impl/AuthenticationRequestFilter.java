@@ -19,9 +19,32 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import java.security.Principal;
-import java.util.Collections;
-import java.util.List;
 
+/*
+ /auth - does not do any authentication
+
+ default JWT
+ JWT.onFailure = Basic
+ Basic.passwordAuthenticator = Dummy
+ Dummy.userName = admin
+ Dummy.password = 12345
+
+ GET /abc = req1
+ JWT.authenticate(req1) -> null (no header)
+ JWT.handleNotAuthenticated(req1) -> false (no action taken, proceed)
+ Basic.authenticate(req1) -> null (no header)
+ Basic.handleNotAuthenticated(req1) -> true (Request.abortWith("/auth/Basic/login&authSessionId=XYZ"))
+
+ GET /login&authSessionId=XYZ = req2
+ JWT.onFailureCompleted(req2, authentication)
+
+ GET
+
+ GET /abc
+ Authorization: Basic qwerqwerweqr
+
+ /abc
+ */
 public final class AuthenticationRequestFilter implements ContainerRequestFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationRequestFilter.class);
@@ -92,58 +115,61 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
     }
 
     private void handleOptionalPolicy(String authenticatorName, ContainerRequestContext containerRequestContext) {
-        if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
-            LOGGER.warn("Policy is OPTIONAL, no JaxrsRequestAuthenticator implementation found with name: " + authenticatorName + "; skipping authentication");
-            return;
-        }
         LOGGER.debug(String.format("Authenticate using authenticator '%s'", authenticatorName));
-        JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
-        authenticate(authenticator, containerRequestContext);
+        authenticate(authenticatorName, containerRequestContext);
         LOGGER.debug("Policy is OPTIONAL, we are " + (!AuthenticationContext.isAuthenticated() ? "NOT " : "") + "authenticated");
     }
 
     private void handleRequiredPolicy(String authenticatorName, ContainerRequestContext containerRequestContext) {
-        if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
-            LOGGER.warn("Policy is REQUIRED, no JaxrsRequestAuthenticator implementation found with name: " + authenticatorName + "; aborting request");
-            containerRequestContext.abortWith(UNAUTHORIZED);
-            return;
-        }
         LOGGER.debug(String.format("Authenticate using authenticator '%s'", authenticatorName));
-        JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
-        authenticator = authenticate(Collections.singletonList(authenticator), containerRequestContext);
+        authenticate(authenticatorName, containerRequestContext);
         if (AuthenticationContext.isAuthenticated()) {
             LOGGER.debug("Policy is REQUIRED, we are authenticated");
         } else {
             LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request");
-            if (authenticator == null || !authenticator.handleNotAuthenticated(containerRequestContext))
-                containerRequestContext.abortWith(UNAUTHORIZED);
-            if (!AuthenticationContext.isAuthenticated() && authenticator != null && authenticator.handleNotAuthenticated(containerRequestContext)) {
-                System.out.println("Redirecting to : " + authenticator.getLoginURI());
-                containerRequestContext.abortWith(Response.seeOther(authenticator.getLoginURI()).build());
-            }
+            containerRequestContext.abortWith(UNAUTHORIZED);
+//            if (!AuthenticationContext.isAuthenticated() && authenticator != null && authenticator.handleNotAuthenticated(containerRequestContext)) {
+//                System.out.println("Redirecting to : " + authenticator.getLoginURI());
+//                containerRequestContext.abortWith(Response.seeOther(authenticator.getLoginURI()).build());
+//            }
         }
     }
 
-    private JaxrsRequestAuthenticator authenticate(List<JaxrsRequestAuthenticator> authenticators, ContainerRequestContext containerRequestContext) {
-        for (JaxrsRequestAuthenticator authenticator : authenticators) {
-            authenticate(authenticator, containerRequestContext);
-            if (AuthenticationContext.isAuthenticated()
-                    || authenticator.handleNotAuthenticated(containerRequestContext)) {
-                return authenticator;
-            }
-        }
-        return null;
-    }
+//    private JaxrsRequestAuthenticator authenticate(List<JaxrsRequestAuthenticator> authenticators, ContainerRequestContext containerRequestContext) {
+//        for (JaxrsRequestAuthenticator authenticator : authenticators) {
+//            authenticate(authenticator, containerRequestContext);
+//            if (AuthenticationContext.isAuthenticated()
+//                    || authenticator.handleNotAuthenticated(containerRequestContext)) {
+//                return authenticator;
+//            }
+//        }
+//        return null;
+//    }
 
-    private void authenticate(JaxrsRequestAuthenticator authenticator, ContainerRequestContext containerRequestContext) {
+    private AuthenticationContext authenticate(String authenticatorName, ContainerRequestContext containerRequestContext) {
         try {
+            if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
+                LOGGER.warn("No JaxrsRequestAuthenticator implementation found with name: " + authenticatorName);
+                return null;
+            }
+            JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
             AuthenticationContext authenticationContext = authenticator.authenticate(containerRequestContext);
             if (authenticationContext != null) {
                 authenticationContextManager.setAuthenticationContext(authenticationContext);
                 containerRequestContext.setSecurityContext(createSecurityContext(authenticationContext, authenticator));
+            } else {
+                if (!authenticator.handleNotAuthenticated(containerRequestContext)) {
+                    String onFailureAuthenticator = configuration.getAuthenticators().get(authenticatorName).getOnFailure();
+                    if (onFailureAuthenticator != null && !onFailureAuthenticator.isEmpty()) {
+                        authenticationContext = authenticate(onFailureAuthenticator, containerRequestContext);
+                        authenticator.onFailureCompleted(containerRequestContext, authenticationContext);
+                    }
+                }
             }
+            return authenticationContext;
         } catch (AuthenticationException cause) {
             LOGGER.debug("Failed to authenticate: " + cause.getMessage());
+            return null;
         }
     }
 

@@ -8,9 +8,9 @@
         <version>0.1.0</version>
     </parent>
 
-    <artifactId>authn-jaxrs-oauth</artifactId>
+    <artifactId>authn-jaxrs-authenticator-oauth</artifactId>
 
-    <name>Authn :: Jaxrs :: OAuth Authentication</name>
+    <name>Authn :: Jaxrs :: Authenticator :: OAuth</name>
     <description>Jaxrs OAuth authentication extensions</description>
 
     <dependencies>
