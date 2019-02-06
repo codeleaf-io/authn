@@ -6,12 +6,11 @@
         <groupId>io.codeleaf.authn</groupId>
         <artifactId>authn</artifactId>
         <version>0.1.0</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>authn-jaxrs-authenticator-basic</artifactId>
+    <artifactId>authn-jaxrs-authenticator-select</artifactId>
 
-    <name>Authn :: Jaxrs :: Authenticator :: Basic</name>
+    <name>Authn :: Jaxrs :: Authenticator :: Select</name>
     <description>Jaxrs basic authentication extensions</description>
 
     <dependencies>
