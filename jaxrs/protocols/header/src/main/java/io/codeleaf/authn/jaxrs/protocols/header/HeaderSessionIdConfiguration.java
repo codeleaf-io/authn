@@ -6,7 +6,7 @@ public final class HeaderSessionIdConfiguration implements Configuration {
 
     private final String headerName;
 
-    public HeaderSessionIdConfiguration(String headerName) {
+    HeaderSessionIdConfiguration(String headerName) {
         this.headerName = headerName;
     }
 

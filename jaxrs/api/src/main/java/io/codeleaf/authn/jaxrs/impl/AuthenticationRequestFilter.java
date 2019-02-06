@@ -146,6 +146,7 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
 //        return null;
 //    }
 
+    // TODO: verify and save state
     private AuthenticationContext authenticate(String authenticatorName, ContainerRequestContext containerRequestContext) {
         try {
             if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
@@ -158,7 +159,8 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
                 authenticationContextManager.setAuthenticationContext(authenticationContext);
                 containerRequestContext.setSecurityContext(createSecurityContext(authenticationContext, authenticator));
             } else {
-                if (!authenticator.handleNotAuthenticated(containerRequestContext)) {
+                Response.ResponseBuilder responseBuilder = authenticator.handleNotAuthenticated(containerRequestContext);
+                if (responseBuilder != null) {
                     String onFailureAuthenticator = configuration.getAuthenticators().get(authenticatorName).getOnFailure();
                     if (onFailureAuthenticator != null && !onFailureAuthenticator.isEmpty()) {
                         authenticationContext = authenticate(onFailureAuthenticator, containerRequestContext);

@@ -3,14 +3,23 @@ package io.codeleaf.authn.jaxrs.jwt;
 import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
+import io.codeleaf.authn.jaxrs.spi.JaxrsSessionIdProtocol;
+import io.codeleaf.authn.spi.SessionDataStore;
 
 import javax.ws.rs.container.ContainerRequestContext;
-import java.io.UnsupportedEncodingException;
+import javax.ws.rs.core.Response;
 
 public final class JwtRequestAuthenticator implements JaxrsRequestAuthenticator {
 
-    private static final String HEADER_VALUE_PREFIX = "Bearer ";
-    private static final String HEADER_KEY = "Authorization";
+    private final JaxrsSessionIdProtocol protocol;
+    private final SessionDataStore store;
+    private final JwtAuthenticationContextSerializer serializer;
+
+    public JwtRequestAuthenticator(JaxrsSessionIdProtocol protocol, SessionDataStore store, JwtAuthenticationContextSerializer serializer) {
+        this.protocol = protocol;
+        this.store = store;
+        this.serializer = serializer;
+    }
 
     @Override
     public String getAuthenticationScheme() {
@@ -19,17 +28,26 @@ public final class JwtRequestAuthenticator implements JaxrsRequestAuthenticator 
 
     @Override
     public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
-        try {
-            String authorizationToken = requestContext.getHeaderString(HEADER_KEY);
-            AuthenticationContext authenticationContext;
-            if (authorizationToken != null && authorizationToken.startsWith(HEADER_VALUE_PREFIX) && requestContext.getCookies().get(LinkedInCookie.COOKIE_NAME) != null) {
-                authenticationContext = getAuthenticationContext(requestContext, authorizationToken);
-            } else {
-                authenticationContext = null;
-            }
-            return authenticationContext;
-        } catch (UnsupportedEncodingException cause) {
-            throw new AuthenticationException("Error in encoding string for cookie.", cause);
+        AuthenticationContext authenticationContext;
+        String sessionId = protocol.getSessionId(requestContext);
+        if (sessionId != null) {
+            String jwt = store.retrieveSessionData(sessionId);
+            authenticationContext = jwt != null ? serializer.deserialize(jwt) : null;
+        } else {
+            authenticationContext = null;
         }
+        return authenticationContext;
+    }
+
+    @Override
+    public Response.ResponseBuilder onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
+        if (requestContext == null) {
+            return null;
+        }
+        String jwt = serializer.serialize(authenticationContext);
+        String sessionId = store.storeSessionData(jwt);
+        Response.ResponseBuilder responseBuilder = Response.temporaryRedirect(null); // we need to determine correct URI...
+        protocol.setSessionId(responseBuilder, sessionId);
+        return responseBuilder;
     }
 }

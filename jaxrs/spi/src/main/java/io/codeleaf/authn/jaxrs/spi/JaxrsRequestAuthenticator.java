@@ -20,11 +20,11 @@ public interface JaxrsRequestAuthenticator {
      * @param requestContext
      * @return
      */
-    default Response handleNotAuthenticated(ContainerRequestContext requestContext) {
+    default Response.ResponseBuilder handleNotAuthenticated(ContainerRequestContext requestContext) {
         return null;
     }
 
-    default Response onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
+    default Response.ResponseBuilder onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
         return null;
     }
 
