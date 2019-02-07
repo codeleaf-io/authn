@@ -20,31 +20,6 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import java.security.Principal;
 
-/*
- /auth - does not do any authentication
-
- default JWT
- JWT.onFailure = Basic
- Basic.passwordAuthenticator = Dummy
- Dummy.userName = admin
- Dummy.password = 12345
-
- GET /abc = req1
- JWT.authenticate(req1) -> null (no header)
- JWT.handleNotAuthenticated(req1) -> false (no action taken, proceed)
- Basic.authenticate(req1) -> null (no header)
- Basic.handleNotAuthenticated(req1) -> true (Request.abortWith("/auth/Basic/login&authSessionId=XYZ"))
-
- GET /login&authSessionId=XYZ = req2
- JWT.onFailureCompleted(req2, authentication)
-
- GET
-
- GET /abc
- Authorization: Basic qwerqwerweqr
-
- /abc
- */
 public final class AuthenticationRequestFilter implements ContainerRequestFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationRequestFilter.class);
@@ -128,10 +103,6 @@ public final class AuthenticationRequestFilter implements ContainerRequestFilter
         } else {
             LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request");
             containerRequestContext.abortWith(UNAUTHORIZED);
-//            if (!AuthenticationContext.isAuthenticated() && authenticator != null && authenticator.handleNotAuthenticated(containerRequestContext)) {
-//                System.out.println("Redirecting to : " + authenticator.getLoginURI());
-//                containerRequestContext.abortWith(Response.seeOther(authenticator.getLoginURI()).build());
-//            }
         }
     }
 

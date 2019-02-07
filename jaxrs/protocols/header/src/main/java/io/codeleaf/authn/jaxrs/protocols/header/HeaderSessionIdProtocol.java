@@ -4,6 +4,7 @@ import io.codeleaf.authn.jaxrs.spi.JaxrsSessionIdProtocol;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 public final class HeaderSessionIdProtocol implements JaxrsSessionIdProtocol {
 
@@ -20,6 +21,7 @@ public final class HeaderSessionIdProtocol implements JaxrsSessionIdProtocol {
 
     @Override
     public String getSessionId(ContainerRequestContext requestContext) {
-        return requestContext.getHeaderString(configuration.getHeaderName());
+        List<String> headers = requestContext.getHeaders().get(configuration.getHeaderName());
+        return headers == null || headers.isEmpty() ? null : headers.get(0);
     }
 }

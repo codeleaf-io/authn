@@ -1,0 +1,25 @@
+<project>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.codeleaf.authn</groupId>
+        <artifactId>authn</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <artifactId>authn-stores-local</artifactId>
+
+    <name>Authn :: Stores :: Local</name>
+    <description>Local Session Data Store</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>authn-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+</project>

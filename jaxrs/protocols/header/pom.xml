@@ -22,7 +22,7 @@
         <dependency>
             <groupId>io.codeleaf.config</groupId>
             <artifactId>config-api</artifactId>
-            <version>${leaf-config.version}</version>
+            <version>${leaf-common.version}</version>
         </dependency>
     </dependencies>
 

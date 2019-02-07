@@ -6,29 +6,23 @@
         <groupId>io.codeleaf.authn</groupId>
         <artifactId>authn</artifactId>
         <version>0.1.0</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>authn-password-dummy</artifactId>
+    <artifactId>authn-jaxrs-protocol-query</artifactId>
 
-    <name>Authn :: Password :: Dummy</name>
-    <description>Dummy implementation for Password SPI</description>
+    <name>Authn :: Jaxrs :: Protocol :: Query</name>
+    <description>Jaxrs header protocol</description>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>authn-password-spi</artifactId>
+            <artifactId>authn-jaxrs-spi</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.codeleaf.config</groupId>
             <artifactId>config-api</artifactId>
             <version>${leaf-config.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.codeleaf.logging</groupId>
-            <artifactId>logging-slf4j</artifactId>
-            <version>${leaf-logging.version}</version>
         </dependency>
     </dependencies>
 

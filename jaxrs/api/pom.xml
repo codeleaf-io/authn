@@ -35,19 +35,14 @@
             <version>${jaxrs.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+            <groupId>io.codeleaf.logging</groupId>
+            <artifactId>logging-slf4j</artifactId>
+            <version>${leaf-logging.version}</version>
         </dependency>
         <dependency>
             <groupId>io.codeleaf.config</groupId>
             <artifactId>config-api</artifactId>
             <version>${leaf-config.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxrs</artifactId>
-            <version>3.6.2.Final</version>
         </dependency>
     </dependencies>
 
