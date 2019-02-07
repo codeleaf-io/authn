@@ -5,7 +5,6 @@ import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 import io.codeleaf.authn.password.spi.Credentials;
 import io.codeleaf.authn.password.spi.PasswordRequestAuthenticator;
-import io.codeleaf.common.utils.SingletonServiceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,10 +56,6 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
             LOGGER.warn(cause.getMessage());
             return null;
         }
-    }
-
-    public BasicAuthenticator() {
-        this(SingletonServiceLoader.load(PasswordRequestAuthenticator.class));
     }
 
     public static BasicAuthenticator create(BasicConfiguration configuration) {

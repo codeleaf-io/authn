@@ -8,9 +8,9 @@
         <version>0.1.0</version>
     </parent>
 
-    <artifactId>authn-jaxrs-protocol-header</artifactId>
+    <artifactId>authn-jaxrs-protocol-query</artifactId>
 
-    <name>Authn :: Jaxrs :: Protocol :: Header</name>
+    <name>Authn :: Jaxrs :: Protocol :: Query</name>
     <description>Jaxrs header protocol</description>
 
     <dependencies>
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>io.codeleaf.config</groupId>
             <artifactId>config-api</artifactId>
-            <version>${leaf-common.version}</version>
+            <version>${leaf-config.version}</version>
         </dependency>
     </dependencies>
 

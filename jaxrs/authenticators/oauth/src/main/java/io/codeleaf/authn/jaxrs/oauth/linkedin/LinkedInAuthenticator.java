@@ -1,6 +1,5 @@
 package io.codeleaf.authn.jaxrs.oauth.linkedin;
 
-import com.github.scribejava.core.oauth.OAuth20Service;
 import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.impl.DefaultAuthenticationContext;
@@ -10,6 +9,7 @@ import io.codeleaf.common.utils.Strings;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashMap;
@@ -64,13 +64,8 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
     }
 
     @Override
-    public boolean handleNotAuthenticated(ContainerRequestContext requestContext) {
-        return true;
-    }
-
-    @Override
-    public URI getLoginURI() {
-        return URI.create(linkedInService.getAuthorizationUrl());
+    public Response.ResponseBuilder handleNotAuthenticated(ContainerRequestContext requestContext) {
+        return Response.temporaryRedirect(URI.create(linkedInService.getAuthorizationUrl()));
     }
 
     @Override

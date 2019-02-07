@@ -20,11 +20,14 @@
         <module>jaxrs/api</module>
         <module>jaxrs/spi</module>
         <module>jaxrs/authenticators/basic</module>
+        <module>jaxrs/authenticators/jwt</module>
         <module>jaxrs/authenticators/oauth</module>
         <module>jaxrs/authenticators/select</module>
-        <module>jaxrs/authenticators/jwt</module>
-        <module>jaxrs/protocols/header</module>
         <module>jaxrs/protocols/cookie</module>
+        <module>jaxrs/protocols/header</module>
+        <module>jaxrs/protocols/query</module>
+        <module>stores/client</module>
+        <module>stores/local</module>
         <module>password/spi</module>
         <module>password/dummy</module>
     </modules>
