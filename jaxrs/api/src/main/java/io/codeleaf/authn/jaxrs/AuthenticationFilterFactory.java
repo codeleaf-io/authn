@@ -2,8 +2,8 @@ package io.codeleaf.authn.jaxrs;
 
 import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.impl.ThreadLocalAuthenticationContextManager;
-import io.codeleaf.authn.jaxrs.impl.AuthenticationRequestFilter;
-import io.codeleaf.authn.jaxrs.impl.AuthenticationResponseFilter;
+import io.codeleaf.authn.jaxrs.impl.ZoneHandlerPreServiceFilter;
+import io.codeleaf.authn.jaxrs.impl.ZoneHandlerPostServiceFilter;
 import io.codeleaf.config.ConfigurationException;
 import io.codeleaf.config.ConfigurationProvider;
 
@@ -23,11 +23,11 @@ public final class AuthenticationFilterFactory {
     }
 
     public ContainerRequestFilter createRequestFilter() {
-        return new AuthenticationRequestFilter(authenticationContextManager, configuration);
+        return new ZoneHandlerPreServiceFilter(authenticationContextManager, configuration);
     }
 
     public ContainerResponseFilter createResponseFilter() {
-        return new AuthenticationResponseFilter(authenticationContextManager);
+        return new ZoneHandlerPostServiceFilter(authenticationContextManager);
     }
 
     public static AuthenticationFilterFactory create() throws ConfigurationException, IOException {
