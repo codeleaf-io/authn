@@ -27,7 +27,7 @@ public final class JwtRequestAuthenticator implements JaxrsRequestAuthenticator 
     }
 
     @Override
-    public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
+    public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
         AuthenticationContext authenticationContext;
         String sessionId = protocol.getSessionId(requestContext);
         if (sessionId != null) {
@@ -41,13 +41,15 @@ public final class JwtRequestAuthenticator implements JaxrsRequestAuthenticator 
 
     @Override
     public Response.ResponseBuilder onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
-        if (requestContext == null) {
-            return null;
-        }
-        String jwt = serializer.serialize(authenticationContext);
-        String sessionId = store.storeSessionData(jwt);
-        Response.ResponseBuilder responseBuilder = Response.temporaryRedirect(null); // we need to determine correct URI...
-        protocol.setSessionId(responseBuilder, sessionId);
-        return responseBuilder;
+//        if (requestContext == null) {
+//            return null;
+//        }
+//        String jwt = serializer.serialize(authenticationContext);
+//        String sessionId = store.storeSessionData(jwt);
+//        Response.ResponseBuilder responseBuilder = Response.temporaryRedirect(null); // we need to determine correct URI...
+//        protocol.setSessionId(responseBuilder, sessionId);
+//        return responseBuilder;
+        return null;
     }
+
 }

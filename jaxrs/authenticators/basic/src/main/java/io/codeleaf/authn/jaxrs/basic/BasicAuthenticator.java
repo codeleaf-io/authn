@@ -33,7 +33,7 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
     }
 
     @Override
-    public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
+    public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
         Credentials credentials = extractCredentials(requestContext);
         LOGGER.debug("Found credentials: " + (credentials != null));
         return credentials != null ? passwordRequestAuthenticator.authenticate(credentials.getUserName(), credentials.getPassword()) : null;
