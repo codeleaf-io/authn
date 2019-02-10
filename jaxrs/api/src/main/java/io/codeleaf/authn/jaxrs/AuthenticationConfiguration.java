@@ -36,6 +36,10 @@ public final class AuthenticationConfiguration implements Configuration {
         return DEFAULT;
     }
 
+    public HandshakeConfiguration getHandshake() {
+        return null;
+    }
+
     public static final class Zone {
 
         private final String name;

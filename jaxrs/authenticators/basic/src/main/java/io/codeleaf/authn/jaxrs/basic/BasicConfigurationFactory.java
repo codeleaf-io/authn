@@ -20,7 +20,7 @@ public final class BasicConfigurationFactory extends AbstractConfigurationFactor
             if (authenticator == null) {
                 throw new InvalidSpecificationException(specification, "No authenticator found with name: " + authenticatorName);
             }
-            return new BasicConfiguration(authenticator);
+            return new BasicConfiguration(authenticator, specification.getValue(String.class, "loginMethod"), specification.getValue(String.class, "formUri"));
         } catch (IllegalArgumentException cause) {
             throw new InvalidSpecificationException(specification, "Can't parse specification: " + cause.getMessage(), cause);
         }

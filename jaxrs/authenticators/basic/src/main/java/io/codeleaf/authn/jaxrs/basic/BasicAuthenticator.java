@@ -4,14 +4,15 @@ import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 import io.codeleaf.authn.password.spi.Credentials;
-import io.codeleaf.authn.password.spi.PasswordRequestAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Base64;
-import java.util.Objects;
 
 public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
 
@@ -21,10 +22,10 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
     private static final String HEADER_VALUE_PREFIX = "Basic ";
     private static final String HEADER_KEY = "Authorization";
     private static final String SEPARATOR = ":";
-    private final PasswordRequestAuthenticator passwordRequestAuthenticator;
+    private final BasicConfiguration configuration;
 
-    public BasicAuthenticator(PasswordRequestAuthenticator passwordRequestAuthenticator) {
-        this.passwordRequestAuthenticator = passwordRequestAuthenticator;
+    public BasicAuthenticator(BasicConfiguration configuration) {
+        this.configuration = configuration;
     }
 
     @Override
@@ -36,10 +37,15 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
     public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
         Credentials credentials = extractCredentials(requestContext);
         LOGGER.debug("Found credentials: " + (credentials != null));
-        return credentials != null ? passwordRequestAuthenticator.authenticate(credentials.getUserName(), credentials.getPassword()) : null;
+        return credentials != null ? configuration.getAuthenticator().authenticate(credentials.getUserName(), credentials.getPassword()) : null;
     }
 
     private Credentials extractCredentials(ContainerRequestContext requestContext) {
+        Credentials headerCredentials = extractHeaderCredentials(requestContext);
+        return headerCredentials == null ? extractFormCredentials(requestContext) : headerCredentials;
+    }
+
+    private Credentials extractHeaderCredentials(ContainerRequestContext requestContext) {
         try {
             Credentials credentials;
             String basicAuthnHeaderValue = requestContext.getHeaderString(HEADER_KEY);
@@ -58,14 +64,41 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
         }
     }
 
-    public static BasicAuthenticator create(BasicConfiguration configuration) {
-        Objects.requireNonNull(configuration);
-        return new BasicAuthenticator(configuration.getAuthenticator());
+    private Credentials extractFormCredentials(ContainerRequestContext requestContext) {
+        if (requestContext.hasEntity() && MediaType.APPLICATION_FORM_URLENCODED_TYPE.equals(requestContext.getMediaType())) {
+            try {
+                String messageBody = getMessageBody(requestContext.getEntityStream());
+                return parseMessageBody(messageBody);
+            } catch (IOException cause) {
+                LOGGER.warn(cause.getMessage());
+            }
+        }
+
+        return null;
     }
 
-    public String toSecureTokenJson(String userName, String password) {
-        byte[] utf8ByteArray = (userName + ":" + password).getBytes(UTF8);
-        return "{\"token\" : \"" + new String(Base64.getEncoder().encode(utf8ByteArray), UTF8) + "\"}";
+    private Credentials parseMessageBody(String messageBody) {
+        System.out.println(messageBody);
+        //TODO: get the body and parse credentials from form data
+        return null;
+    }
+
+    private String getMessageBody(InputStream entityStream) throws IOException {
+        StringBuilder messageBodyBuilder = new StringBuilder();
+        try (Reader reader = new BufferedReader(new InputStreamReader(entityStream))) {
+            int ch = 0;
+            while ((ch = reader.read()) != -1) {
+                messageBodyBuilder.append((char) ch);
+            }
+        }
+        return messageBodyBuilder.toString();
+    }
+
+    @Override
+    public Response.ResponseBuilder onNotAuthenticated(ContainerRequestContext requestContext) {
+        return configuration.isFormLogin()
+                ? Response.temporaryRedirect(configuration.getFormUri())
+                : Response.status(Response.Status.UNAUTHORIZED);
     }
 
     @Override
