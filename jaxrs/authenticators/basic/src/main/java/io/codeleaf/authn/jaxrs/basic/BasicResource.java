@@ -1,9 +1,10 @@
 package io.codeleaf.authn.jaxrs.basic;
 
 
-import io.codeleaf.authn.AuthenticationException;
-
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -44,19 +45,5 @@ public class BasicResource {
     @Path("/login")
     public Response getLoginForm() {
         return Response.ok(htmlPage).build();
-    }
-
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/authenticate")
-    public Response authenticate(@FormParam("email") String email, @FormParam("password") String password) {
-        try {
-            if (null != basicAuthenticator.authenticate(null, null)) {
-                return Response.ok(basicAuthenticator.toSecureTokenJson(email, password)).build();
-            }
-        } catch (AuthenticationException cause) {
-            System.out.println(cause);
-        }
-        return Response.status(Response.Status.BAD_REQUEST).entity("{\"Error\" : \"Invalid user name or password!\"}").build();
     }
 }

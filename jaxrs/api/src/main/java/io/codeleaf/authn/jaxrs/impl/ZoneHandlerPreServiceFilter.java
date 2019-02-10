@@ -17,6 +17,7 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.util.Map;
 
 public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter {
 
@@ -49,8 +50,9 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
         if (zone != null) {
             LOGGER.debug(String.format("Zone matched: '%s' for: %s", zone.getName(), uriInfo.getPath()));
         }
-        AuthenticationPolicy policy = determintePolicy(authentication, zone);
+        AuthenticationPolicy policy = determinePolicy(authentication, zone);
         setHandshakeState(containerRequestContext, authentication, zone);
+        setAuthenticatorExecutorStack(authentication, zone, containerRequestContext);
         try {
             switch (policy) {
                 case NONE:
@@ -71,24 +73,39 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
         }
     }
 
-    private void setHandshakeState(ContainerRequestContext containerRequestContext, Authentication authentication, AuthenticationConfiguration.Zone zone) {
-        HandshakeState state = new HandshakeState();
-        state.setUri(uriInfo.getRequestUri());
-        String authenticatorName = determinteAuthenticatorName(authentication, zone);
+    private void setAuthenticatorExecutorStack(Authentication authentication, AuthenticationConfiguration.Zone zone, ContainerRequestContext containerRequestContext) {
+        JaxrsRequestAuthenticatorExecutor root = new RootRequestAuthenticatorExecutor(authenticationContextManager);
+        JaxrsRequestAuthenticatorExecutor current = root;
+        String authenticatorName = determineAuthenticatorName(authentication, zone);
         while (authenticatorName != null) {
-            state.getAuthenticatorNames().add(authenticatorName);
+            current.setOnFailure(AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
+            current = current.getOnFailure();
             authenticatorName = configuration.getAuthenticators().get(authenticatorName).getOnFailure();
         }
+        containerRequestContext.setProperty("authenticatorStack", root);
+    }
+
+    private void setHandshakeState(ContainerRequestContext containerRequestContext, Authentication authentication, AuthenticationConfiguration.Zone zone) {
+        HandshakeState extractedState = extractHandshakeState(containerRequestContext);
+        HandshakeState state = extractedState == null
+                ? new HandshakeState(uriInfo.getRequestUri())
+                : extractedState;
         containerRequestContext.setProperty("handshakeState", state);
     }
 
-    private AuthenticationPolicy determintePolicy(Authentication authentication, AuthenticationConfiguration.Zone zone) {
+    private HandshakeState extractHandshakeState(ContainerRequestContext containerRequestContext) {
+        String sessionId = configuration.getHandshake().getProtocol().getSessionId(containerRequestContext);
+        String sessionData = configuration.getHandshake().getStore().retrieveSessionData(sessionId);
+        return HandshakeState.fromString(sessionData);
+    }
+
+    private AuthenticationPolicy determinePolicy(Authentication authentication, AuthenticationConfiguration.Zone zone) {
         return authentication != null
                 ? authentication.value()
                 : zone != null ? zone.getPolicy() : AuthenticationPolicy.OPTIONAL;
     }
 
-    private String determinteAuthenticatorName(Authentication authentication, AuthenticationConfiguration.Zone zone) {
+    private String determineAuthenticatorName(Authentication authentication, AuthenticationConfiguration.Zone zone) {
         return authentication != null && !authentication.authenticator().isEmpty()
                 ? authentication.authenticator()
                 : zone != null ? zone.getAuthenticator().getName() : "default";
@@ -122,12 +139,8 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
 
     private Response authenticate(ContainerRequestContext containerRequestContext) throws AuthenticationException {
         HandshakeState state = (HandshakeState) containerRequestContext.getProperty("handshakeState");
-        JaxrsRequestAuthenticatorExecutor root = new RootRequestAuthenticatorExecutor(authenticationContextManager);
-        JaxrsRequestAuthenticatorExecutor current = root;
-        for (String authenticatorName : state.getAuthenticatorNames()) {
-            current.setOnFailure(AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
-            current = current.getOnFailure();
-        }
+        Map<String, JaxrsRequestAuthenticatorExecutor> map = (Map<String, JaxrsRequestAuthenticatorExecutor>) containerRequestContext.getProperty("excutorIndex");
+        JaxrsRequestAuthenticatorExecutor root = map.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
         return root.authenticate(containerRequestContext);
     }
 

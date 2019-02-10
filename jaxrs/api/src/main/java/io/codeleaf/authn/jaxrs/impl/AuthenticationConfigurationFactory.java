@@ -16,8 +16,10 @@ import io.codeleaf.config.util.Specifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public final class AuthenticationConfigurationFactory extends AbstractConfigurationFactory<AuthenticationConfiguration> {
@@ -157,12 +159,46 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         try {
             LOGGER.debug("Initializing authenticator: " + authenticator.getName());
             Class<? extends Configuration> configClass = authenticator.getConfiguration().getClass();
-            Method method = authenticator.getImplementationClass().getMethod("create", configClass);
-            Object instance = method.invoke(null, authenticator.getConfiguration());
+
+            Method method = getMethod(authenticator, configClass);
+            Object instance = null;
+            if (method == null) {
+                instance = method.invoke(null, authenticator.getConfiguration());
+            } else {
+                Constructor<?> constructor = getConstructor(authenticator);
+                if (constructor != null) {
+                    instance = constructor.newInstance(authenticator.getConfiguration());
+                }
+            }
             AuthenticatorRegistry.register(authenticator.getName(), instance);
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException cause) {
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException | InstantiationException cause) {
             LOGGER.error("Failed to initialize authenticator: " + cause.getMessage());
             throw new InvalidSpecificationException(specification, cause.getMessage(), cause);
         }
+    }
+
+    private Method getMethod(AuthenticationConfiguration.Authenticator authenticator, Class<? extends Configuration> configClass) throws NoSuchMethodException {
+        for (Method method : authenticator.getImplementationClass().getMethods()) {
+            if (method.getName().equals("create")) {
+                for (Type type : method.getParameterTypes()) {
+                    if (type.equals(configClass)) {
+                        return authenticator.getImplementationClass().getMethod("create", configClass);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Constructor<?> getConstructor(AuthenticationConfiguration.Authenticator authenticator) {
+        for (Constructor<?> constructor : authenticator.getImplementationClass().getConstructors()) {
+            Type[] parameterTypes = constructor.getGenericParameterTypes();
+            for (Type type : parameterTypes) {
+                if (type.equals(authenticator.getConfiguration().getClass())) {
+                    return constructor;
+                }
+            }
+        }
+        return null;
     }
 }
