@@ -62,4 +62,14 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
         Objects.requireNonNull(configuration);
         return new BasicAuthenticator(configuration.getAuthenticator());
     }
+
+    public String toSecureTokenJson(String userName, String password) {
+        byte[] utf8ByteArray = (userName + ":" + password).getBytes(UTF8);
+        return "{\"token\" : \"" + new String(Base64.getEncoder().encode(utf8ByteArray), UTF8) + "\"}";
+    }
+
+    @Override
+    public Object getResource() {
+        return new BasicResource(this);
+    }
 }
