@@ -12,7 +12,7 @@ public final class DummyConfigurationFactory extends AbstractConfigurationFactor
     }
 
     @Override
-    protected DummyConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public DummyConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         return new DummyConfiguration(
                 Specifications.parseString(specification, "userName"),
                 Specifications.parseString(specification, "password"));

@@ -8,6 +8,7 @@ import io.codeleaf.authn.jaxrs.Authentication;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
+import io.codeleaf.config.spec.InvalidSpecificationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,9 +52,9 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
             LOGGER.debug(String.format("Zone matched: '%s' for: %s", zone.getName(), uriInfo.getPath()));
         }
         AuthenticationPolicy policy = determinePolicy(authentication, zone);
+        try {
         setHandshakeState(containerRequestContext, authentication, zone);
         setAuthenticatorExecutorStack(authentication, zone, containerRequestContext);
-        try {
             switch (policy) {
                 case NONE:
                     handleNonePolicy(containerRequestContext);
@@ -68,7 +69,7 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
                     LOGGER.error("Aborting request because we have invalid authentication policy!");
                     containerRequestContext.abortWith(SERVER_ERROR);
             }
-        } catch (IllegalStateException | AuthenticationException cause) {
+        } catch (IllegalStateException | AuthenticationException | InvalidSpecificationException cause) {
             containerRequestContext.abortWith(SERVER_ERROR);
         }
     }
@@ -85,7 +86,7 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
         containerRequestContext.setProperty("authenticatorStack", root);
     }
 
-    private void setHandshakeState(ContainerRequestContext containerRequestContext, Authentication authentication, AuthenticationConfiguration.Zone zone) {
+    private void setHandshakeState(ContainerRequestContext containerRequestContext, Authentication authentication, AuthenticationConfiguration.Zone zone) throws InvalidSpecificationException {
         HandshakeState extractedState = extractHandshakeState(containerRequestContext);
         HandshakeState state = extractedState == null
                 ? new HandshakeState(uriInfo.getRequestUri())
@@ -93,7 +94,7 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
         containerRequestContext.setProperty("handshakeState", state);
     }
 
-    private HandshakeState extractHandshakeState(ContainerRequestContext containerRequestContext) {
+    private HandshakeState extractHandshakeState(ContainerRequestContext containerRequestContext) throws InvalidSpecificationException {
         String sessionId = configuration.getHandshake().getProtocol().getSessionId(containerRequestContext);
         String sessionData = configuration.getHandshake().getStore().retrieveSessionData(sessionId);
         return HandshakeState.fromString(sessionData);

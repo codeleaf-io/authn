@@ -18,7 +18,7 @@ public final class ClientSessionDataConfigurationFactory extends AbstractConfigu
     }
 
     @Override
-    protected ClientSessionDataConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public ClientSessionDataConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         return new ClientSessionDataConfiguration(
                 specification.hasSetting("encrypted") ? Specifications.parseBoolean(specification, "encrypted") : DEFAULT.isEncrypted(),
                 parseTimeout(specification),

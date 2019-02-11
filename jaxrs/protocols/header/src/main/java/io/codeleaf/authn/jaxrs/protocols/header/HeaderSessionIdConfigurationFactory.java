@@ -13,7 +13,7 @@ public final class HeaderSessionIdConfigurationFactory extends AbstractConfigura
     }
 
     @Override
-    protected HeaderSessionIdConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public HeaderSessionIdConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         if (specification.hasSetting("headerName")) {
             return new HeaderSessionIdConfiguration(specification.getValue(String.class, "headerName"));
         }
