@@ -27,9 +27,9 @@ public final class HandshakeConfigurationFactory extends AbstractConfigurationFa
     public HandshakeConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         if (specification == null) return null;
         try {
-            String path = specification.getValue(String.class, "path");
-            String protocol = specification.getValue(String.class, "protocol");
-            String store = specification.getValue(String.class, "store");
+            String path = (String) specification.getSetting("handshake", "path").getValue();
+            String protocol = (String) specification.getSetting("handshake", "protocol").getValue();
+            String store = (String) specification.getValue("handshake","store");
             JaxrsSessionIdProtocol jaxrsSessionIdProtocol = getProtocol(specification, protocol);
             SessionDataStore sessionDataStore = getSessionDataStore(specification, store);
             return new HandshakeConfiguration(path, jaxrsSessionIdProtocol, sessionDataStore);
