@@ -15,7 +15,7 @@ public final class OAuthConfigurationFactory extends AbstractConfigurationFactor
     }
 
     @Override
-    protected OAuthConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public OAuthConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         try {
             return new OAuthConfiguration(
                     Specifications.parseString(specification, "clientId"),

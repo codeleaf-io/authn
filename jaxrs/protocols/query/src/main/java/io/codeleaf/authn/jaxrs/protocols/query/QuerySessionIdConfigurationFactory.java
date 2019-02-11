@@ -13,9 +13,10 @@ public final class QuerySessionIdConfigurationFactory extends AbstractConfigurat
         super(DEFAULT);
     }
 
+
     @Override
-    protected QuerySessionIdConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public QuerySessionIdConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         return new QuerySessionIdConfiguration(
-                specification.hasSetting("parameterName") ? Specifications.parseString(specification, "parameterName") : DEFAULT.getParameterName());
+                specification.hasSetting("queryParamName") ? Specifications.parseString(specification, "queryParamName") : DEFAULT.getParameterName());
     }
 }

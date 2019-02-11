@@ -13,7 +13,7 @@ public final class BasicConfigurationFactory extends AbstractConfigurationFactor
     }
 
     @Override
-    protected BasicConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public BasicConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         try {
             String authenticatorName = specification.getValue(String.class, "passwordAuthenticator");
             PasswordRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, PasswordRequestAuthenticator.class);

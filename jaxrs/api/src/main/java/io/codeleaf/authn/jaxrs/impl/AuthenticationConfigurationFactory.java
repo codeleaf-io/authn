@@ -31,7 +31,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
     }
 
     @Override
-    protected AuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public AuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         Map<String, AuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
         for (String authenticatorName : specification.getChilds("authenticators")) {
             authenticators.put(authenticatorName, parseAuthenticator(authenticatorName, specification));
@@ -40,7 +40,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         for (String zoneName : specification.getChilds("zones")) {
             zones.add(parseZone(zoneName, specification, authenticators));
         }
-        return AuthenticationConfiguration.create(zones, authenticators);
+        return AuthenticationConfiguration.create(zones, authenticators, specification);
     }
 
     private AuthenticationConfiguration.Zone parseZone(String zoneName, Specification specification, Map<String, AuthenticationConfiguration.Authenticator> authenticators) throws SettingNotFoundException, InvalidSettingException {
@@ -162,7 +162,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
 
             Method method = getMethod(authenticator, configClass);
             Object instance = null;
-            if (method == null) {
+            if (method != null) {
                 instance = method.invoke(null, authenticator.getConfiguration());
             } else {
                 Constructor<?> constructor = getConstructor(authenticator);

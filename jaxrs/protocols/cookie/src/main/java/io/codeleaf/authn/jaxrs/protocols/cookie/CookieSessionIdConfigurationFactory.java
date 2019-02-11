@@ -14,7 +14,7 @@ public final class CookieSessionIdConfigurationFactory extends AbstractConfigura
     }
 
     @Override
-    protected CookieSessionIdConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public CookieSessionIdConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         return new CookieSessionIdConfiguration(
                 specification.hasSetting("name") ? specification.getValue(String.class, "name") : DEFAULT.getName(),
                 specification.hasSetting("path") ? specification.getValue(String.class, "path") : DEFAULT.getPath(),

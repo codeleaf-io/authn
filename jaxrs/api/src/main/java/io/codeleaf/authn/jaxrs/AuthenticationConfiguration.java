@@ -1,6 +1,8 @@
 package io.codeleaf.authn.jaxrs;
 
 import io.codeleaf.config.Configuration;
+import io.codeleaf.config.spec.InvalidSpecificationException;
+import io.codeleaf.config.spec.Specification;
 
 import java.util.*;
 
@@ -8,10 +10,12 @@ public final class AuthenticationConfiguration implements Configuration {
 
     private final List<Zone> zones;
     private final Map<String, Authenticator> authenticators;
+    private final HandshakeConfiguration handshakeConfiguration;
 
-    private AuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators) {
+    private AuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators, HandshakeConfiguration handshakeConfiguration) {
         this.zones = zones;
         this.authenticators = authenticators;
+        this.handshakeConfiguration = handshakeConfiguration;
     }
 
     public List<Zone> getZones() {
@@ -22,22 +26,32 @@ public final class AuthenticationConfiguration implements Configuration {
         return authenticators;
     }
 
-    public static AuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators) {
+    public static AuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators, Specification specification) throws InvalidSpecificationException {
         Objects.requireNonNull(zones);
         Objects.requireNonNull(authenticators);
         return new AuthenticationConfiguration(
                 Collections.unmodifiableList(new ArrayList<>(zones)),
-                Collections.unmodifiableMap(new LinkedHashMap<>(authenticators)));
+                Collections.unmodifiableMap(new LinkedHashMap<>(authenticators)), new HandshakeConfigurationFactory().parseConfiguration(specification));
     }
 
-    private static final AuthenticationConfiguration DEFAULT = create(Collections.emptyList(), Collections.emptyMap());
+    //TODO: Fix by passing correct specification
+    private static final AuthenticationConfiguration DEFAULT;
+
+    static {
+        try {
+            DEFAULT = create(Collections.emptyList(), Collections.emptyMap(), null);
+        } catch (InvalidSpecificationException cause) {
+            cause.printStackTrace();
+            throw new ExceptionInInitializerError(cause);
+        }
+    }
 
     public static final AuthenticationConfiguration getDefault() {
         return DEFAULT;
     }
 
     public HandshakeConfiguration getHandshake() {
-        return null;
+        return handshakeConfiguration;
     }
 
     public static final class Zone {
