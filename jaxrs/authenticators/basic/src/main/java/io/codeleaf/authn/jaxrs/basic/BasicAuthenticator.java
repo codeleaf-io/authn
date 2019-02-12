@@ -96,13 +96,16 @@ public final class BasicAuthenticator implements JaxrsRequestAuthenticator {
 
     @Override
     public Response.ResponseBuilder onNotAuthenticated(ContainerRequestContext requestContext) {
-        return configuration.isForm()
+        return !configuration.isForm()
+                ? Response.status(Response.Status.UNAUTHORIZED).header("WWW-Authenticate", "Basic realm=\"" + configuration.getRealm() + "\"")
+                : configuration.getFormUri() != null
                 ? Response.temporaryRedirect(configuration.getFormUri())
-                : Response.status(Response.Status.UNAUTHORIZED).header("WWW-Authenticate", "Basic realm=\"" + configuration.getRealm() + "\"");
+                : Response.ok(BasicResource.HTML_PAGE);
+
     }
 
     @Override
-    public Object getResource() {
+    public BasicResource getResource() {
         return new BasicResource();
     }
 }
