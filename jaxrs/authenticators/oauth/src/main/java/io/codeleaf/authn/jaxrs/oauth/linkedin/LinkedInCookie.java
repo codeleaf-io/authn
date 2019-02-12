@@ -1,7 +1,7 @@
 package io.codeleaf.authn.jaxrs.oauth.linkedin;
 
 import com.github.scribejava.core.model.OAuth2AccessToken;
-import io.codeleaf.common.utils.Strings;
+import io.codeleaf.common.utils.StringEncoder;
 
 import javax.servlet.http.Cookie;
 import javax.ws.rs.core.NewCookie;
@@ -37,7 +37,7 @@ public final class LinkedInCookie extends NewCookie {
 
     private LinkedInCookie(String firstName, String lastName, String headline, String token, String refreshToken, String scope, String tokenType, Integer expiresIn, String cookieDomain, String landingPageUrl) throws UnsupportedEncodingException {
         super(COOKIE_NAME,
-                Strings.toEncodeBase64UTF8(Strings.encodeString(toStringMap(firstName, lastName, headline, token, refreshToken, scope, tokenType, expiresIn))),
+                StringEncoder.toEncodedBase64UTF8(StringEncoder.encodeMap(toStringMap(firstName, lastName, headline, token, refreshToken, scope, tokenType, expiresIn))),
                 "/", cookieDomain, NewCookie.DEFAULT_VERSION, null, -1, null, false, true);
         this.token = token;
         this.refreshToken = refreshToken;
@@ -116,7 +116,10 @@ public final class LinkedInCookie extends NewCookie {
 
     public static final class Factory {
 
-        public static final LinkedInCookie create(OAuth2AccessToken accessToken, String firstName, String lastName, String headline, String cookieDomain, String landingPageUrl) throws UnsupportedEncodingException {
+        private Factory() {
+        }
+
+        public static LinkedInCookie create(OAuth2AccessToken accessToken, String firstName, String lastName, String headline, String cookieDomain, String landingPageUrl) throws UnsupportedEncodingException {
             return new LinkedInCookie(firstName, lastName, headline, accessToken.getAccessToken(),
                     accessToken.getRefreshToken(),
                     accessToken.getScope(),
@@ -126,7 +129,7 @@ public final class LinkedInCookie extends NewCookie {
                     landingPageUrl);
         }
 
-        public static final LinkedInCookie create(OAuth2AccessToken accessToken, String cookieDomain, String landingPageUrl) throws UnsupportedEncodingException {
+        public static LinkedInCookie create(OAuth2AccessToken accessToken, String cookieDomain, String landingPageUrl) throws UnsupportedEncodingException {
             return new LinkedInCookie(null, null, null, accessToken.getAccessToken(),
                     accessToken.getRefreshToken(),
                     accessToken.getScope(),
@@ -136,8 +139,8 @@ public final class LinkedInCookie extends NewCookie {
                     landingPageUrl);
         }
 
-        public static final LinkedInCookie create(String value, String cookieDomain) throws UnsupportedEncodingException {
-            Map<String, String> map = Strings.decodeString(Strings.toDecodeBase64UTF8(value));
+        public static LinkedInCookie create(String value, String cookieDomain) throws UnsupportedEncodingException {
+            Map<String, String> map = StringEncoder.decodeMap(StringEncoder.toDecodedBase64UTF8(value));
             return new LinkedInCookie(map.get(FIRST_NAME),
                     map.get(LAST_NAME),
                     map.get(HEADLINE),

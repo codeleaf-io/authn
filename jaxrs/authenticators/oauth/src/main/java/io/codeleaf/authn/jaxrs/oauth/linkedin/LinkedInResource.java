@@ -5,7 +5,6 @@ import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.NotAuthenticatedException;
 import io.codeleaf.authn.jaxrs.Authentication;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
-import io.codeleaf.common.utils.Strings;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -79,7 +78,17 @@ public final class LinkedInResource {
     }
 
     private LinkedInCookie getLinkedInCookie(OAuth2AccessToken accessToken, Map<String, Object> map) throws UnsupportedEncodingException, URISyntaxException {
-        return LinkedInCookie.Factory.create(accessToken, (String) map.get("firstName"), (String) map.get("lastName"), (String) map.get("headline"), Strings.extractHostName(linkedInService.getCallback()), (String) map.get(LinkedInCookie.LANDING_PAGE_URL));
+        return LinkedInCookie.Factory.create(accessToken, (String) map.get("firstName"), (String) map.get("lastName"), (String) map.get("headline"), extractHostName(linkedInService.getCallback()), (String) map.get(LinkedInCookie.LANDING_PAGE_URL));
+    }
+
+    // TODO: Used as a domain name... review
+    private String extractHostName(String callback) throws URISyntaxException {
+        URI uri = new URI(callback);
+        String hostname = uri.getHost();
+        if (hostname != null) {
+            return hostname.startsWith("www.") ? hostname.substring(4) : hostname;
+        }
+        return hostname;
     }
 
     private String getEntityString(OAuth2AccessToken accessToken) {

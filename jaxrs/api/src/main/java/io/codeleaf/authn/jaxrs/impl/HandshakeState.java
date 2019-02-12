@@ -1,8 +1,9 @@
 package io.codeleaf.authn.jaxrs.impl;
 
+import io.codeleaf.common.utils.StringEncoder;
+
 import java.net.URI;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public final class HandshakeState {
 
@@ -13,13 +14,14 @@ public final class HandshakeState {
         this.uri = uri;
     }
 
-    public static HandshakeState fromString(String sessionData) {
-        return new HandshakeState(getUri(sessionData));
-    }
-
-    private static URI getUri(String sessionData) {
-        //TODO: implement ...
-        return null;
+    public static HandshakeState decode(String encodedHandshakeState) {
+        Objects.requireNonNull(encodedHandshakeState);
+        Map<String, String> fields = StringEncoder.decodeMap(encodedHandshakeState);
+        URI uri = URI.create(fields.get("uri"));
+        List<String> authenticatorNames = StringEncoder.decodeList(fields.get("authenticatorNames"));
+        HandshakeState handshakeState = new HandshakeState(uri);
+        handshakeState.getAuthenticatorNames().addAll(authenticatorNames);
+        return handshakeState;
     }
 
     public URI getUri() {
@@ -30,4 +32,10 @@ public final class HandshakeState {
         return authenticatorNames;
     }
 
+    public String encode() {
+        Map<String, String> fields = new HashMap<>();
+        fields.put("uri", uri.toString());
+        fields.put("authenticatorNames", StringEncoder.encodeList(authenticatorNames));
+        return StringEncoder.encodeMap(fields);
+    }
 }

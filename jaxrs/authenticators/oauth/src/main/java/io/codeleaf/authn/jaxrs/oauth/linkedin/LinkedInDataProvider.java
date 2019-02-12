@@ -5,6 +5,7 @@ import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Verb;
 import com.github.scribejava.core.oauth.OAuth20Service;
+import io.codeleaf.common.utils.Types;
 
 import java.io.IOException;
 import java.util.Map;
@@ -22,7 +23,7 @@ public class LinkedInDataProvider {
         linkedInService.signRequest(accessToken, request);
         final com.github.scribejava.core.model.Response response = linkedInService.execute(request);
         ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> map = mapper.readValue(response.getBody(), Map.class);
+        Map<String, Object> map = Types.cast(mapper.readValue(response.getBody(), Map.class));
         map.put("token", accessToken.getAccessToken());
         return map;
     }

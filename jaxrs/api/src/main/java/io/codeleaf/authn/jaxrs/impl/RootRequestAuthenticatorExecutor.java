@@ -6,6 +6,7 @@ import io.codeleaf.authn.impl.ThreadLocalAuthenticationContextManager;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import java.security.Principal;
@@ -14,19 +15,27 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
 
     private final ThreadLocalAuthenticationContextManager authenticationContextManager;
 
-    public RootRequestAuthenticatorExecutor(ThreadLocalAuthenticationContextManager authenticationContextManager) {
-        super(null, null);
+    public RootRequestAuthenticatorExecutor(ThreadLocalAuthenticationContextManager authenticationContextManager, HandshakeStateHandler handshakeStateHandler) {
+        super(new RootAuthenticator(), handshakeStateHandler, null);
         this.authenticationContextManager = authenticationContextManager;
     }
 
     public Response authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
-        return getOnFailure().authenticate(requestContext);
+        return getOnFailure() == null ? null : getOnFailure().authenticate(requestContext);
     }
 
     public Response onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
         authenticationContextManager.setAuthenticationContext(authenticationContext);
         requestContext.setSecurityContext(createSecurityContext(authenticationContext, getOnFailure().getAuthenticator()));
         return null;
+    }
+
+    @Override
+    public void onServiceCompleted(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
+        if (getOnFailure() != null) {
+            getOnFailure().onServiceCompleted(containerRequestContext, containerResponseContext);
+        }
+        authenticationContextManager.clearAuthenticationContext();
     }
 
     @Override
@@ -56,5 +65,18 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
                 return authenticator.getAuthenticationScheme();
             }
         };
+    }
+
+    public static final class RootAuthenticator implements JaxrsRequestAuthenticator {
+
+        @Override
+        public String getAuthenticationScheme() {
+            return null;
+        }
+
+        @Override
+        public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
+            return null;
+        }
     }
 }
