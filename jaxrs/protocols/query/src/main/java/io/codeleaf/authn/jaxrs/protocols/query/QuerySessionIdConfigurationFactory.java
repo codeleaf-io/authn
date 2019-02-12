@@ -7,7 +7,7 @@ import io.codeleaf.config.util.Specifications;
 
 public final class QuerySessionIdConfigurationFactory extends AbstractConfigurationFactory<QuerySessionIdConfiguration> {
 
-    private static final QuerySessionIdConfiguration DEFAULT = new QuerySessionIdConfiguration("");
+    private static final QuerySessionIdConfiguration DEFAULT = new QuerySessionIdConfiguration("_a");
 
     public QuerySessionIdConfigurationFactory() {
         super(DEFAULT);

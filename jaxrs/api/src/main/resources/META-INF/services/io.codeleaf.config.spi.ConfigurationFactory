@@ -1,2 +1,2 @@
 io.codeleaf.authn.jaxrs.impl.AuthenticationConfigurationFactory
-io.codeleaf.authn.jaxrs.HandshakeConfigurationFactory
+io.codeleaf.authn.jaxrs.impl.HandshakeConfigurationFactory

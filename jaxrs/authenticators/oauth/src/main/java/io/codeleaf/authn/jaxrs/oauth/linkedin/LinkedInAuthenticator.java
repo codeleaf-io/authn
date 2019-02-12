@@ -5,7 +5,8 @@ import io.codeleaf.authn.AuthenticationException;
 import io.codeleaf.authn.impl.DefaultAuthenticationContext;
 import io.codeleaf.authn.jaxrs.oauth.OAuthAuthenticator;
 import io.codeleaf.authn.jaxrs.oauth.OAuthConfiguration;
-import io.codeleaf.common.utils.Strings;
+import io.codeleaf.common.utils.StringEncoder;
+import io.codeleaf.common.utils.Types;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
@@ -55,7 +56,7 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
     private AuthenticationContext getAuthenticationContext(ContainerRequestContext requestContext, String authorizationToken) throws UnsupportedEncodingException {
         Cookie cookie = requestContext.getCookies().get(LinkedInCookie.COOKIE_NAME);
         AuthenticationContext authenticationContext = null;
-        Map<String, Object> map = new HashMap<>(Strings.decodeString(Strings.toDecodeBase64UTF8(cookie.getValue())));
+        Map<String, Object> map = Types.cast(StringEncoder.decodeMap(StringEncoder.toDecodedBase64UTF8(cookie.getValue())));
         LinkedInCookie linkedinCookie = LinkedInCookie.Factory.create(cookie.getValue(), cookie.getDomain());
         if (linkedinCookie.getToken().equals(authorizationToken.substring(HEADER_VALUE_PREFIX.length()))) {
             authenticationContext = new DefaultAuthenticationContext(() -> (String) map.get(LinkedInCookie.TOKEN), map, true);

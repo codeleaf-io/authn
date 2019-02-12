@@ -8,12 +8,14 @@ import java.net.URI;
 public final class BasicConfiguration implements Configuration {
 
     private final PasswordRequestAuthenticator authenticator;
-    private final String loginMethod;
-    private final String formUri;
+    private final String realm;
+    private final boolean isForm;
+    private final URI formUri;
 
-    BasicConfiguration(PasswordRequestAuthenticator authenticator, String loginMethod, String formUri) {
+    BasicConfiguration(PasswordRequestAuthenticator authenticator, String realm, boolean isForm, URI formUri) {
         this.authenticator = authenticator;
-        this.loginMethod = loginMethod;
+        this.realm = realm;
+        this.isForm = isForm;
         this.formUri = formUri;
     }
 
@@ -21,13 +23,15 @@ public final class BasicConfiguration implements Configuration {
         return authenticator;
     }
 
-    public boolean isFormLogin() {
-        return loginMethod.equals("form");
+    public String getRealm() {
+        return realm;
+    }
+
+    public boolean isForm() {
+        return isForm;
     }
 
     public URI getFormUri() {
-        if (loginMethod.equals("form"))
-            return URI.create(formUri);
-        return null;
+        return formUri;
     }
 }

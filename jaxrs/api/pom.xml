@@ -54,6 +54,13 @@
             <artifactId>config-api</artifactId>
             <version>${leaf-config.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.codeleaf.common</groupId>
+            <artifactId>common-libs-test</artifactId>
+            <version>${leaf-common.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

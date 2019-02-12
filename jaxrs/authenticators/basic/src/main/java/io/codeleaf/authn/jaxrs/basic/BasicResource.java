@@ -1,21 +1,16 @@
 package io.codeleaf.authn.jaxrs.basic;
 
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-@Produces({"application/json"})
-@Consumes({"application/json"})
+@Produces({"text/html"})
 @Path("/")
-public class BasicResource {
+public final class BasicResource {
 
-    private final BasicAuthenticator basicAuthenticator;
-
-    private final String htmlPage = "<!DOCTYPE html>\n" +
+    private static final String HTML_PAGE = "<!DOCTYPE html>\n" +
             "<html lang=\"en\">\n" +
             "<head>\n" +
             "    <meta charset=\"UTF-8\">\n" +
@@ -36,14 +31,9 @@ public class BasicResource {
             "</body>\n" +
             "</html>";
 
-    public BasicResource(BasicAuthenticator basicAuthenticator) {
-        this.basicAuthenticator = basicAuthenticator;
-    }
-
     @GET
-    @Produces(MediaType.TEXT_HTML)
     @Path("/login")
     public Response getLoginForm() {
-        return Response.ok(htmlPage).build();
+        return Response.ok(HTML_PAGE).build();
     }
 }

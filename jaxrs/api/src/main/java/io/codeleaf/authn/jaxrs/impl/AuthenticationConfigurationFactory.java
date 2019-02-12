@@ -3,7 +3,9 @@ package io.codeleaf.authn.jaxrs.impl;
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
+import io.codeleaf.authn.jaxrs.HandshakeConfiguration;
 import io.codeleaf.config.Configuration;
+import io.codeleaf.config.ConfigurationException;
 import io.codeleaf.config.ConfigurationNotFoundException;
 import io.codeleaf.config.ConfigurationProvider;
 import io.codeleaf.config.impl.AbstractConfigurationFactory;
@@ -16,6 +18,7 @@ import io.codeleaf.config.util.Specifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -26,21 +29,41 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationConfigurationFactory.class);
 
+    //TODO: Fix by passing correct specification
+    private static final AuthenticationConfiguration DEFAULT;
+
+    static {
+        try {
+            DEFAULT = AuthenticationConfiguration.create(
+                    Collections.emptyList(),
+                    Collections.emptyMap(),
+                    ConfigurationProvider.get().getConfiguration(HandshakeConfiguration.class));
+        } catch (ConfigurationException | IOException cause) {
+            throw new ExceptionInInitializerError(cause);
+        }
+    }
+
     public AuthenticationConfigurationFactory() {
-        super(AuthenticationConfiguration.getDefault());
+        super(DEFAULT);
     }
 
     @Override
     public AuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
-        Map<String, AuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
-        for (String authenticatorName : specification.getChilds("authenticators")) {
-            authenticators.put(authenticatorName, parseAuthenticator(authenticatorName, specification));
+        try {
+            Map<String, AuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
+            for (String authenticatorName : specification.getChilds("authenticators")) {
+                authenticators.put(authenticatorName, parseAuthenticator(authenticatorName, specification));
+            }
+            List<AuthenticationConfiguration.Zone> zones = new ArrayList<>();
+            for (String zoneName : specification.getChilds("zones")) {
+                zones.add(parseZone(zoneName, specification, authenticators));
+            }
+            Specification handshakeSpecification = MapSpecification.create(specification, "handshake");
+            HandshakeConfiguration handshake = ConfigurationProvider.get().parseConfiguration(HandshakeConfiguration.class, handshakeSpecification);
+            return AuthenticationConfiguration.create(zones, authenticators, handshake);
+        } catch (ConfigurationNotFoundException cause) {
+            throw new InvalidSpecificationException(specification, cause);
         }
-        List<AuthenticationConfiguration.Zone> zones = new ArrayList<>();
-        for (String zoneName : specification.getChilds("zones")) {
-            zones.add(parseZone(zoneName, specification, authenticators));
-        }
-        return AuthenticationConfiguration.create(zones, authenticators, specification);
     }
 
     private AuthenticationConfiguration.Zone parseZone(String zoneName, Specification specification, Map<String, AuthenticationConfiguration.Authenticator> authenticators) throws SettingNotFoundException, InvalidSettingException {

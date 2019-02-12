@@ -8,7 +8,7 @@ import io.codeleaf.authn.jaxrs.Authentication;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
-import io.codeleaf.config.spec.InvalidSpecificationException;
+import io.codeleaf.common.utils.Types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +18,7 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.util.HashMap;
 import java.util.Map;
 
 public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter {
@@ -28,6 +29,7 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
 
     private final ThreadLocalAuthenticationContextManager authenticationContextManager;
     private final AuthenticationConfiguration configuration;
+    private final HandshakeStateHandler handshakeStateHandler;
 
     @Context
     private ResourceInfo resourceInfo;
@@ -35,26 +37,27 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     @Context
     private UriInfo uriInfo;
 
-    public ZoneHandlerPreServiceFilter(ThreadLocalAuthenticationContextManager authenticationContextManager, AuthenticationConfiguration configuration) {
+    public ZoneHandlerPreServiceFilter(ThreadLocalAuthenticationContextManager authenticationContextManager, AuthenticationConfiguration configuration, HandshakeStateHandler handshakeStateHandler) {
         this.authenticationContextManager = authenticationContextManager;
         this.configuration = configuration;
+        this.handshakeStateHandler = handshakeStateHandler;
     }
 
     @Override
     public void filter(ContainerRequestContext containerRequestContext) {
-        LOGGER.debug("Processing request for endpoint: " + uriInfo.getPath());
-        Authentication authentication = Authentications.getAuthentication(resourceInfo);
-        if (authentication != null) {
-            LOGGER.debug("We found an authentication annotation: " + authentication);
-        }
-        AuthenticationConfiguration.Zone zone = Zones.getZone(uriInfo.getPath(), configuration);
-        if (zone != null) {
-            LOGGER.debug(String.format("Zone matched: '%s' for: %s", zone.getName(), uriInfo.getPath()));
-        }
-        AuthenticationPolicy policy = determinePolicy(authentication, zone);
         try {
-        setHandshakeState(containerRequestContext, authentication, zone);
-        setAuthenticatorExecutorStack(authentication, zone, containerRequestContext);
+            LOGGER.debug("Processing request for endpoint: " + uriInfo.getPath());
+            Authentication authentication = Authentications.getAuthentication(resourceInfo);
+            if (authentication != null) {
+                LOGGER.debug("We found an authentication annotation: " + authentication);
+            }
+            AuthenticationConfiguration.Zone zone = Zones.getZone(uriInfo.getPath(), configuration);
+            if (zone != null) {
+                LOGGER.debug(String.format("Zone matched: '%s' for: %s", zone.getName(), uriInfo.getPath()));
+            }
+            AuthenticationPolicy policy = determinePolicy(authentication, zone);
+            setHandshakeState(containerRequestContext);
+            setAuthenticatorExecutorStack(containerRequestContext, authentication, zone);
             switch (policy) {
                 case NONE:
                     handleNonePolicy(containerRequestContext);
@@ -66,38 +69,36 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
                     handleRequiredPolicy(containerRequestContext);
                     break;
                 default:
-                    LOGGER.error("Aborting request because we have invalid authentication policy!");
-                    containerRequestContext.abortWith(SERVER_ERROR);
+                    String message = "Aborting request because we have invalid authentication policy!";
+                    LOGGER.error(message);
+                    throw new IllegalStateException(message);
             }
-        } catch (IllegalStateException | AuthenticationException | InvalidSpecificationException cause) {
+        } catch (IllegalStateException | IllegalArgumentException | AuthenticationException cause) {
             containerRequestContext.abortWith(SERVER_ERROR);
         }
     }
 
-    private void setAuthenticatorExecutorStack(Authentication authentication, AuthenticationConfiguration.Zone zone, ContainerRequestContext containerRequestContext) {
-        JaxrsRequestAuthenticatorExecutor root = new RootRequestAuthenticatorExecutor(authenticationContextManager);
+    private void setHandshakeState(ContainerRequestContext containerRequestContext) {
+        HandshakeState extractedState = handshakeStateHandler.extractHandshakeState(containerRequestContext);
+        handshakeStateHandler.setHandshakeState(containerRequestContext,
+                extractedState == null
+                        ? new HandshakeState(uriInfo.getRequestUri())
+                        : extractedState);
+    }
+
+    private void setAuthenticatorExecutorStack(ContainerRequestContext containerRequestContext, Authentication authentication, AuthenticationConfiguration.Zone zone) {
+        JaxrsRequestAuthenticatorExecutor root = new RootRequestAuthenticatorExecutor(authenticationContextManager, handshakeStateHandler);
         JaxrsRequestAuthenticatorExecutor current = root;
         String authenticatorName = determineAuthenticatorName(authentication, zone);
+        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = new HashMap<>();
         while (authenticatorName != null) {
             current.setOnFailure(AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
             current = current.getOnFailure();
+            executorIndex.put(authenticatorName, current);
             authenticatorName = configuration.getAuthenticators().get(authenticatorName).getOnFailure();
         }
         containerRequestContext.setProperty("authenticatorStack", root);
-    }
-
-    private void setHandshakeState(ContainerRequestContext containerRequestContext, Authentication authentication, AuthenticationConfiguration.Zone zone) throws InvalidSpecificationException {
-        HandshakeState extractedState = extractHandshakeState(containerRequestContext);
-        HandshakeState state = extractedState == null
-                ? new HandshakeState(uriInfo.getRequestUri())
-                : extractedState;
-        containerRequestContext.setProperty("handshakeState", state);
-    }
-
-    private HandshakeState extractHandshakeState(ContainerRequestContext containerRequestContext) throws InvalidSpecificationException {
-        String sessionId = configuration.getHandshake().getProtocol().getSessionId(containerRequestContext);
-        String sessionData = configuration.getHandshake().getStore().retrieveSessionData(sessionId);
-        return HandshakeState.fromString(sessionData);
+        containerRequestContext.setProperty("executorIndex", executorIndex);
     }
 
     private AuthenticationPolicy determinePolicy(Authentication authentication, AuthenticationConfiguration.Zone zone) {
@@ -139,10 +140,24 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     }
 
     private Response authenticate(ContainerRequestContext containerRequestContext) throws AuthenticationException {
-        HandshakeState state = (HandshakeState) containerRequestContext.getProperty("handshakeState");
-        Map<String, JaxrsRequestAuthenticatorExecutor> map = (Map<String, JaxrsRequestAuthenticatorExecutor>) containerRequestContext.getProperty("excutorIndex");
-        JaxrsRequestAuthenticatorExecutor root = map.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
-        return root.authenticate(containerRequestContext);
+        JaxrsRequestAuthenticatorExecutor executor;
+        HandshakeState state = handshakeStateHandler.getHandshakeState(containerRequestContext);
+        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = Types.cast(containerRequestContext.getProperty("executorIndex"));
+        if (executorIndex.isEmpty()) {
+            if (!state.getAuthenticatorNames().isEmpty()) {
+                throw new IllegalArgumentException("Invalid amount of authenticator names found!");
+            }
+            executor = ((JaxrsRequestAuthenticatorExecutor) containerRequestContext.getProperty("authenticatorStack"));
+        } else {
+            if (state.getAuthenticatorNames().isEmpty()) {
+                executor = ((JaxrsRequestAuthenticatorExecutor) containerRequestContext.getProperty("authenticatorStack"));
+            } else {
+                executor = executorIndex.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
+            }
+            if (executor == null) {
+                throw new IllegalArgumentException("Invalid authenticator name in authentication handshake!");
+            }
+        }
+        return executor.authenticate(containerRequestContext);
     }
-
 }
