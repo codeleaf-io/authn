@@ -10,7 +10,7 @@ import javax.ws.rs.core.Response;
 @Path("/")
 public final class BasicResource {
 
-    private static final String HTML_PAGE = "<!DOCTYPE html>\n" +
+    public static final String HTML_PAGE = "<!DOCTYPE html>\n" +
             "<html lang=\"en\">\n" +
             "<head>\n" +
             "    <meta charset=\"UTF-8\">\n" +
