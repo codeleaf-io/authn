@@ -8,14 +8,15 @@ import io.codeleaf.authn.spi.SessionDataStore;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;
+import java.util.Objects;
 
-public final class JwtRequestAuthenticator implements JaxrsRequestAuthenticator {
+public final class JwtAuthenticator implements JaxrsRequestAuthenticator {
 
     private final JaxrsSessionIdProtocol protocol;
     private final SessionDataStore store;
     private final JwtAuthenticationContextSerializer serializer;
 
-    public JwtRequestAuthenticator(JaxrsSessionIdProtocol protocol, SessionDataStore store, JwtAuthenticationContextSerializer serializer) {
+    private JwtAuthenticator(JaxrsSessionIdProtocol protocol, SessionDataStore store, JwtAuthenticationContextSerializer serializer) {
         this.protocol = protocol;
         this.store = store;
         this.serializer = serializer;
@@ -41,15 +42,18 @@ public final class JwtRequestAuthenticator implements JaxrsRequestAuthenticator 
 
     @Override
     public Response.ResponseBuilder onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
-//        if (requestContext == null) {
-//            return null;
-//        }
-//        String jwt = serializer.serialize(authenticationContext);
-//        String sessionId = store.storeSessionData(jwt);
-//        Response.ResponseBuilder responseBuilder = Response.temporaryRedirect(null); // we need to determine correct URI...
-//        protocol.setSessionId(responseBuilder, sessionId);
-//        return responseBuilder;
-        return null;
+        if (requestContext == null) {
+            return null;
+        }
+        String jwt = serializer.serialize(authenticationContext);
+        String sessionId = store.storeSessionData(jwt);
+        Response.ResponseBuilder responseBuilder = Response.temporaryRedirect(requestContext.getUriInfo().getRequestUri()); // we need to determine correct URI...
+        protocol.setSessionId(responseBuilder, sessionId);
+        return responseBuilder;
     }
 
+    public static JwtAuthenticator create(JwtConfiguration configuration) {
+        Objects.requireNonNull(configuration);
+        return new JwtAuthenticator(configuration.getProtocol(), configuration.getStore(), configuration.getSerializer());
+    }
 }

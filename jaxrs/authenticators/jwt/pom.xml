@@ -46,6 +46,16 @@
             <artifactId>logging-slf4j</artifactId>
             <version>${leaf-logging.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.codeleaf.authn</groupId>
+            <artifactId>authn-jaxrs-protocol-query</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.codeleaf.authn</groupId>
+            <artifactId>authn-stores-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
