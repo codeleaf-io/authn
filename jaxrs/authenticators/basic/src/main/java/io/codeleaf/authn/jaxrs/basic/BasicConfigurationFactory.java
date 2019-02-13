@@ -9,8 +9,6 @@ import io.codeleaf.config.spec.SettingNotFoundException;
 import io.codeleaf.config.spec.Specification;
 import io.codeleaf.config.util.Specifications;
 
-import java.net.URI;
-
 public final class BasicConfigurationFactory extends AbstractConfigurationFactory<BasicConfiguration> {
 
     public BasicConfigurationFactory() {
@@ -23,8 +21,7 @@ public final class BasicConfigurationFactory extends AbstractConfigurationFactor
             return new BasicConfiguration(
                     getAuthenticator(specification),
                     getRealm(specification),
-                    getIsForm(specification),
-                    getFormUri(specification));
+                    getPrompt(specification));
         } catch (IllegalArgumentException cause) {
             throw new InvalidSpecificationException(specification, "Can't parse specification: " + cause.getMessage(), cause);
         }
@@ -45,13 +42,7 @@ public final class BasicConfigurationFactory extends AbstractConfigurationFactor
         return authenticator;
     }
 
-    private boolean getIsForm(Specification specification) throws SettingNotFoundException, InvalidSettingException {
-        return specification.hasSetting("form") && Specifications.parseBoolean(specification, "form");
-    }
-
-    private URI getFormUri(Specification specification) throws SettingNotFoundException {
-        return specification.hasSetting("uri")
-                ? URI.create(Specifications.parseString(specification, "uri"))
-                : null;
+    private boolean getPrompt(Specification specification) throws SettingNotFoundException, InvalidSettingException {
+        return !specification.hasSetting("prompt") || Specifications.parseBoolean(specification, "prompt");
     }
 }

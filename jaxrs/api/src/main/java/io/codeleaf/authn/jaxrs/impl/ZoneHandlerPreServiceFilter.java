@@ -110,7 +110,9 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     private String determineAuthenticatorName(Authentication authentication, AuthenticationConfiguration.Zone zone) {
         return authentication != null && !authentication.authenticator().isEmpty()
                 ? authentication.authenticator()
-                : zone != null ? zone.getAuthenticator().getName() : "default";
+                : zone != null && zone.getAuthenticator() != null
+                ? zone.getAuthenticator().getName()
+                : "default";
     }
 
     private void handleNonePolicy(ContainerRequestContext containerRequestContext) {
