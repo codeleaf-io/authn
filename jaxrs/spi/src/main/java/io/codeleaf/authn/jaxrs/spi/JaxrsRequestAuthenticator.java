@@ -11,7 +11,7 @@ public interface JaxrsRequestAuthenticator {
 
     interface AuthenticatorContext {
 
-        void setOnFailure(JaxrsRequestAuthenticator authenticator);
+        void setOnFailure(String authenticatorName, JaxrsRequestAuthenticator authenticator);
 
         JaxrsRequestAuthenticator getParent();
 

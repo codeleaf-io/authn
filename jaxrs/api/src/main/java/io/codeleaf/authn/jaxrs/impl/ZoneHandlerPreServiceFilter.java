@@ -46,7 +46,7 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     @Override
     public void filter(ContainerRequestContext containerRequestContext) {
         try {
-            LOGGER.debug("Processing request for endpoint: " + uriInfo.getPath());
+            LOGGER.debug("Processing request for endpoint: " + uriInfo.getRequestUri());
             Authentication authentication = Authentications.getAuthentication(resourceInfo);
             if (authentication != null) {
                 LOGGER.debug("We found an authentication annotation: " + authentication);
@@ -80,6 +80,11 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
 
     private void setHandshakeState(ContainerRequestContext containerRequestContext) {
         HandshakeState extractedState = handshakeStateHandler.extractHandshakeState(containerRequestContext);
+        if (extractedState != null) {
+            LOGGER.debug("Handshake state: " + extractedState.getAuthenticatorNames());
+        } else {
+            LOGGER.debug("New handshake for: " + containerRequestContext.getUriInfo().getRequestUri());
+        }
         handshakeStateHandler.setHandshakeState(containerRequestContext,
                 extractedState == null
                         ? new HandshakeState(uriInfo.getRequestUri())
@@ -92,7 +97,7 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
         String authenticatorName = determineAuthenticatorName(authentication, zone);
         Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = new HashMap<>();
         while (authenticatorName != null) {
-            current.setOnFailure(AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
+            current.setOnFailure(authenticatorName, AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
             current = current.getOnFailure();
             executorIndex.put(authenticatorName, current);
             authenticatorName = configuration.getAuthenticators().get(authenticatorName).getOnFailure();
@@ -122,28 +127,32 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     private void handleOptionalPolicy(ContainerRequestContext containerRequestContext) throws AuthenticationException {
         Response response = authenticate(containerRequestContext);
         if (response != null) {
-            LOGGER.debug("Sending handshake response...");
-            containerRequestContext.abortWith(response);
-            containerRequestContext.setProperty("aborted", true);
+            handleHandshakeInProgress(containerRequestContext, response);
         } else {
+            LOGGER.debug("Handshake completed");
             LOGGER.debug("Policy is OPTIONAL, we are " + (!AuthenticationContext.isAuthenticated() ? "NOT " : "") + "authenticated");
         }
     }
 
     private void handleRequiredPolicy(ContainerRequestContext containerRequestContext) throws AuthenticationException {
         Response response = authenticate(containerRequestContext);
-        if (response != null) {
-            LOGGER.debug("Sending handshake response...");
-            containerRequestContext.abortWith(response);
-            containerRequestContext.setProperty("aborted", true);
+        if (response == null) {
+            handleHandshakeInProgress(containerRequestContext, response);
         } else {
             if (AuthenticationContext.isAuthenticated()) {
+                LOGGER.debug("Handshake completed");
                 LOGGER.debug("Policy is REQUIRED, we are authenticated");
             } else {
                 LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request");
                 containerRequestContext.abortWith(UNAUTHORIZED);
             }
         }
+    }
+
+    private void handleHandshakeInProgress(ContainerRequestContext containerRequestContext, Response response) {
+        containerRequestContext.abortWith(response);
+        containerRequestContext.setProperty("aborted", true);
+        containerRequestContext.setProperty("performHandshake", true);
     }
 
     private Response authenticate(ContainerRequestContext containerRequestContext) throws AuthenticationException {

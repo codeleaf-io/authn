@@ -39,4 +39,17 @@ public final class HandshakeStateHandler {
         }
         return null;
     }
+
+    public Response clearHandshakeState(ContainerRequestContext requestContext) {
+        Response response;
+        HandshakeState handshakeState = extractHandshakeState(requestContext);
+        if (handshakeState != null) {
+            Response.ResponseBuilder builder = Response.temporaryRedirect(requestContext.getUriInfo().getRequestUri());
+            configuration.getProtocol().clearSessionId(requestContext, builder);
+            response = builder.build();
+        } else {
+            response = null;
+        }
+        return response;
+    }
 }

@@ -13,12 +13,18 @@ public final class ZoneHandlerPostServiceFilter implements ContainerResponseFilt
 
     @Override
     public void filter(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
-        if (!(Boolean) containerRequestContext.getProperty("aborted")) {
+        Boolean aborted = (Boolean) containerRequestContext.getProperty("aborted");
+        if (aborted != null && !aborted) {
             JaxrsRequestAuthenticatorExecutor rootExecutor = (JaxrsRequestAuthenticatorExecutor) containerRequestContext.getProperty("authenticatorStack");
             if (rootExecutor != null) {
                 rootExecutor.onServiceCompleted(containerRequestContext, containerResponseContext);
             }
         }
-        LOGGER.debug("Processing finished for: " + containerRequestContext.getUriInfo().getRequestUri());
+        Boolean performHandshake = (Boolean) containerRequestContext.getProperty("performHandshake");
+        if (performHandshake != null && performHandshake) {
+            LOGGER.debug("Sending handshake response for: " + containerRequestContext.getUriInfo().getRequestUri());
+        } else {
+            LOGGER.debug("Processing finished for: " + containerRequestContext.getUriInfo().getRequestUri());
+        }
     }
 }

@@ -47,12 +47,17 @@ public final class ClientSessionDataStore implements SessionDataStore {
             return isTimedOut(claims.getIssuedAt()) ? null :
                     configuration.isEncrypted() ? decrypt(claims.getSubject()) : claims.getSubject();
         } catch (JwtException cause) {
+            System.err.println(cause);
             return null;
         }
     }
 
     private boolean isTimedOut(Date issuedAt) {
-        return System.currentTimeMillis() - issuedAt.getTime() < configuration.getTimeoutTime() * 1_000;
+        boolean timedOut = System.currentTimeMillis() - issuedAt.getTime() >= configuration.getTimeoutTime() * 1_000;
+        if (timedOut) {
+            System.err.println("jwt is timed out!");
+        }
+        return timedOut;
     }
 
     private String encrypt(String sessionData) {
