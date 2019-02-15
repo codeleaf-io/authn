@@ -18,11 +18,11 @@ public final class HandshakeStateHandler {
         containerRequestContext.setProperty("handshakeState", handshakeState);
     }
 
-    public void setHandshakeState(Response.ResponseBuilder responseBuilder, HandshakeState handshakeState) {
+    public void setHandshakeState(ContainerRequestContext containerRequestContext, Response.ResponseBuilder responseBuilder, HandshakeState handshakeState) {
         Objects.requireNonNull(handshakeState);
         String sessionData = handshakeState.encode();
         String sessionId = configuration.getStore().storeSessionData(sessionData);
-        configuration.getProtocol().setSessionId(responseBuilder, sessionId);
+        configuration.getProtocol().setSessionId(containerRequestContext, responseBuilder, sessionId);
     }
 
     public HandshakeState getHandshakeState(ContainerRequestContext containerRequestContext) {

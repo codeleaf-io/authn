@@ -16,7 +16,7 @@ public final class CookieSessionIdProtocol implements JaxrsSessionIdProtocol {
     }
 
     @Override
-    public void setSessionId(Response.ResponseBuilder response, String sessionId) {
+    public void setSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId) {
         response.cookie(new NewCookie(configuration.getName(), sessionId, configuration.getPath(), configuration.getDomain(),
                 configuration.getComment(), configuration.getMaxAge(), configuration.isSecure(), configuration.isHttpOnly()));
     }
