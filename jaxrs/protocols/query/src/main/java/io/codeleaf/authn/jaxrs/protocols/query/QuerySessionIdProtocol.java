@@ -18,7 +18,6 @@ public final class QuerySessionIdProtocol implements JaxrsSessionIdProtocol {
     @Override
     public void setSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId) {
         MultivaluedMap<String, Object> headers = response.build().getHeaders();
-        System.out.println(headers);
         Object headerValue = headers.getFirst("Location");
         String header = headerValue == null ? null : headerValue.toString();
         String param = configuration.getParameterName() + "=" + sessionId;
@@ -29,11 +28,7 @@ public final class QuerySessionIdProtocol implements JaxrsSessionIdProtocol {
         } else {
             header += "?" + param;
         }
-        headers.remove("Location");
-        headers.add("Location", URI.create(header));
-        System.out.println(headers);
-        response.replaceAll(headers);
-        System.out.println("We should have set the session id: " + sessionId);
+        response.location(URI.create(header));
     }
 
     @Override
