@@ -34,7 +34,6 @@ public final class AuthenticatorRegistry {
 
     public static Object lookup(String name) {
         Objects.requireNonNull(name);
-        System.out.println("lookup for " + name + " in: " + authenticators);
         return authenticators.get(name);
     }
 

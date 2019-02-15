@@ -7,5 +7,11 @@ public interface JaxrsSessionIdProtocol {
 
     void setSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId);
 
+    default void clearSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response) {
+        clearSessionId(requestContext, response, getSessionId(requestContext));
+    }
+
+    void clearSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId);
+
     String getSessionId(ContainerRequestContext requestContext);
 }

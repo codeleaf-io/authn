@@ -9,25 +9,36 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthenticator.AuthenticatorContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JaxrsRequestAuthenticatorExecutor.class);
 
+    private final String authenticatorName;
     private final JaxrsRequestAuthenticator authenticator;
     private final HandshakeStateHandler handshakeStateHandler;
     private JaxrsRequestAuthenticatorExecutor parent;
     private JaxrsRequestAuthenticatorExecutor onFailure;
     private AuthenticationContext authenticationContext;
 
-    public JaxrsRequestAuthenticatorExecutor(JaxrsRequestAuthenticator authenticator, HandshakeStateHandler handshakeStateHandler, JaxrsRequestAuthenticatorExecutor parent) {
+    public JaxrsRequestAuthenticatorExecutor(String authenticatorName, JaxrsRequestAuthenticator authenticator, HandshakeStateHandler handshakeStateHandler, JaxrsRequestAuthenticatorExecutor parent) {
+        this.authenticatorName = authenticatorName;
         this.authenticator = authenticator;
         this.handshakeStateHandler = handshakeStateHandler;
         this.parent = parent;
     }
 
+    public String getAuthenticatorName() {
+        return authenticatorName;
+    }
+
     public JaxrsRequestAuthenticator getAuthenticator() {
         return authenticator;
+    }
+
+    public HandshakeStateHandler getHandshakeStateHandler() {
+        return handshakeStateHandler;
     }
 
     public JaxrsRequestAuthenticatorExecutor getOnFailure() {
@@ -36,10 +47,13 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
 
     public Response authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         Response response;
+        List<String> authenticatorNames = handshakeStateHandler.getHandshakeState(requestContext).getAuthenticatorNames();
+        authenticatorNames.add(authenticatorName);
         LOGGER.debug("Calling authenticate() on " + authenticator.getClass().getCanonicalName() + "...");
         authenticationContext = authenticator.authenticate(requestContext, this);
         if (authenticationContext != null) {
             LOGGER.debug("Proceeding to parent: " + parent.authenticator.getClass().getCanonicalName() + "...");
+            authenticatorNames.remove(authenticatorNames.size() - 1);
             response = parent.onFailureCompleted(requestContext, authenticationContext);
         } else {
             LOGGER.debug("Calling onNotAuthenticated() on " + authenticator.getClass().getCanonicalName() + "...");
@@ -47,7 +61,7 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
             if (responseBuilder != null) {
                 response = buildResponse(requestContext, responseBuilder);
             } else if (onFailure != null) {
-                LOGGER.debug("Proceeding to onFailure: " + parent.authenticator.getClass().getCanonicalName() + "...");
+                LOGGER.debug("Proceeding to onFailure: " + onFailure.authenticator.getClass().getCanonicalName() + "...");
                 response = onFailure.authenticate(requestContext);
             } else {
                 response = null;
@@ -63,7 +77,9 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
         if (responseBuilder != null) {
             response = buildResponse(requestContext, responseBuilder);
         } else {
+            List<String> authenticatorNames = handshakeStateHandler.getHandshakeState(requestContext).getAuthenticatorNames();
             LOGGER.debug("Proceeding to parent: " + parent.authenticator.getClass().getCanonicalName() + "...");
+            authenticatorNames.remove(authenticatorNames.size() - 1);
             response = parent.onFailureCompleted(requestContext, authenticationContext);
         }
         return response;
@@ -75,8 +91,8 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
     }
 
     @Override
-    public void setOnFailure(JaxrsRequestAuthenticator authenticator) {
-        onFailure = new JaxrsRequestAuthenticatorExecutor(authenticator, handshakeStateHandler, this);
+    public void setOnFailure(String authenticatorName, JaxrsRequestAuthenticator authenticator) {
+        onFailure = new JaxrsRequestAuthenticatorExecutor(authenticatorName, authenticator, handshakeStateHandler, this);
     }
 
     @Override
@@ -86,6 +102,7 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
 
     private Response buildResponse(ContainerRequestContext containerRequestContext, Response.ResponseBuilder responseBuilder) {
         HandshakeState handshakeState = handshakeStateHandler.getHandshakeState(containerRequestContext);
+        LOGGER.debug("Building response with handshake state: " + handshakeState.getAuthenticatorNames());
         handshakeStateHandler.setHandshakeState(containerRequestContext, responseBuilder, handshakeState);
         return responseBuilder.build();
     }

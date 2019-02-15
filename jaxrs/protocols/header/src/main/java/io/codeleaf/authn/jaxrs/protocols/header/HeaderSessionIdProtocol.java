@@ -20,6 +20,10 @@ public final class HeaderSessionIdProtocol implements JaxrsSessionIdProtocol {
     }
 
     @Override
+    public void clearSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId) {
+    }
+
+    @Override
     public String getSessionId(ContainerRequestContext requestContext) {
         List<String> headers = requestContext.getHeaders().get(configuration.getHeaderName());
         return headers == null || headers.isEmpty() ? null : headers.get(0);

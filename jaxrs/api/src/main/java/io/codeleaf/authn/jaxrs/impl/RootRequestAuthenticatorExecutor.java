@@ -16,7 +16,7 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
     private final ThreadLocalAuthenticationContextManager authenticationContextManager;
 
     public RootRequestAuthenticatorExecutor(ThreadLocalAuthenticationContextManager authenticationContextManager, HandshakeStateHandler handshakeStateHandler) {
-        super(new RootAuthenticator(), handshakeStateHandler, null);
+        super("ROOT", new RootAuthenticator(), handshakeStateHandler, null);
         this.authenticationContextManager = authenticationContextManager;
     }
 
@@ -25,9 +25,12 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
     }
 
     public Response onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
-        authenticationContextManager.setAuthenticationContext(authenticationContext);
-        requestContext.setSecurityContext(createSecurityContext(authenticationContext, getOnFailure().getAuthenticator()));
-        return null;
+        Response response = getHandshakeStateHandler().clearHandshakeState(requestContext);
+        if (response == null) {
+            authenticationContextManager.setAuthenticationContext(authenticationContext);
+            requestContext.setSecurityContext(createSecurityContext(authenticationContext, getOnFailure().getAuthenticator()));
+        }
+        return response;
     }
 
     @Override
