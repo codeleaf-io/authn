@@ -33,7 +33,7 @@ public final class QuerySessionIdProtocol implements JaxrsSessionIdProtocol {
 
     @Override
     public String getSessionId(ContainerRequestContext requestContext) {
-        Object value = requestContext.getProperty(configuration.getParameterName());
+        Object value = requestContext.getUriInfo().getQueryParameters().getFirst(configuration.getParameterName());
         return value == null ? null : value.toString();
     }
 }
