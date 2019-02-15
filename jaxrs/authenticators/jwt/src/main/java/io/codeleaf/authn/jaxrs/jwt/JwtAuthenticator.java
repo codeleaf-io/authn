@@ -32,9 +32,12 @@ public final class JwtAuthenticator implements JaxrsRequestAuthenticator {
         AuthenticationContext authenticationContext;
         String sessionId = protocol.getSessionId(requestContext);
         if (sessionId != null) {
+            System.out.println("Session id found: " + sessionId);
             String jwt = store.retrieveSessionData(sessionId);
+            System.out.println("Session data: " + jwt);
             authenticationContext = jwt != null ? serializer.deserialize(jwt) : null;
         } else {
+            System.out.println("No session id found!");
             authenticationContext = null;
         }
         return authenticationContext;
