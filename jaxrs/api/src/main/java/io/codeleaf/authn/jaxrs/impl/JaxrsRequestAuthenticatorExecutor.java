@@ -86,7 +86,7 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
 
     private Response buildResponse(ContainerRequestContext containerRequestContext, Response.ResponseBuilder responseBuilder) {
         HandshakeState handshakeState = handshakeStateHandler.getHandshakeState(containerRequestContext);
-        handshakeStateHandler.setHandshakeState(responseBuilder, handshakeState);
+        handshakeStateHandler.setHandshakeState(containerRequestContext, responseBuilder, handshakeState);
         return responseBuilder.build();
     }
 }

@@ -14,7 +14,7 @@ public final class JwtAuthenticationContextSerializer {
         Map<String, String> fields = new HashMap<>();
         fields.put("identity", authenticationContext.getIdentity());
         fields.put("secure", Boolean.toString(authenticationContext.isSecure()));
-        return authenticationContext.getIdentity();
+        return StringEncoder.encodeMap(fields);
     }
 
     public AuthenticationContext deserialize(String serializedAuthenticationContext) {

@@ -34,8 +34,8 @@ public final class JwtConfigurationFactory extends AbstractConfigurationFactory<
         }
     }
 
-    public JwtConfigurationFactory(JwtConfiguration defaultConfiguration) {
-        super(defaultConfiguration);
+    public JwtConfigurationFactory() {
+        super(DEFAULT);
     }
 
     @Override
@@ -73,6 +73,6 @@ public final class JwtConfigurationFactory extends AbstractConfigurationFactory<
     }
 
     private static JaxrsSessionIdProtocol createDefaultProtocol() throws InvalidSpecificationException, SpecificationNotFoundException, SpecificationFormatException, ConfigurationNotFoundException, IOException {
-        return new QuerySessionIdProtocol(ConfigurationProvider.get().getConfiguration(QuerySessionIdConfiguration.class));
+        return new QuerySessionIdProtocol(new QuerySessionIdConfiguration("_j"));
     }
 }

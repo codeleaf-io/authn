@@ -42,13 +42,13 @@ public final class JwtAuthenticator implements JaxrsRequestAuthenticator {
 
     @Override
     public Response.ResponseBuilder onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
-        if (requestContext == null) {
+        if (authenticationContext == null) {
             return null;
         }
         String jwt = serializer.serialize(authenticationContext);
         String sessionId = store.storeSessionData(jwt);
         Response.ResponseBuilder responseBuilder = Response.temporaryRedirect(requestContext.getUriInfo().getRequestUri()); // we need to determine correct URI...
-        protocol.setSessionId(responseBuilder, sessionId);
+        protocol.setSessionId(requestContext, responseBuilder, sessionId);
         return responseBuilder;
     }
 

@@ -5,7 +5,7 @@ import javax.ws.rs.core.Response;
 
 public interface JaxrsSessionIdProtocol {
 
-    void setSessionId(Response.ResponseBuilder response, String sessionId);
+    void setSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId);
 
     String getSessionId(ContainerRequestContext requestContext);
 }

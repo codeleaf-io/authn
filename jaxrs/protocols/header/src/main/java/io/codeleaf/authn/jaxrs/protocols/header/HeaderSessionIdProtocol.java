@@ -15,7 +15,7 @@ public final class HeaderSessionIdProtocol implements JaxrsSessionIdProtocol {
     }
 
     @Override
-    public void setSessionId(Response.ResponseBuilder response, String sessionId) {
+    public void setSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId) {
         response.header(configuration.getHeaderName(), sessionId);
     }
 

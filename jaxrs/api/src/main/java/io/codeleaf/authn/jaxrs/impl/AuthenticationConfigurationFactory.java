@@ -4,6 +4,7 @@ import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.HandshakeConfiguration;
+import io.codeleaf.common.utils.Types;
 import io.codeleaf.config.Configuration;
 import io.codeleaf.config.ConfigurationException;
 import io.codeleaf.config.ConfigurationNotFoundException;
@@ -50,6 +51,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
     @Override
     public AuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         try {
+            System.out.println(specification.getChilds("authenticators"));
             Map<String, AuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
             for (String authenticatorName : specification.getChilds("authenticators")) {
                 authenticators.put(authenticatorName, parseAuthenticator(authenticatorName, specification));
@@ -67,6 +69,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
     }
 
     private AuthenticationConfiguration.Zone parseZone(String zoneName, Specification specification, Map<String, AuthenticationConfiguration.Authenticator> authenticators) throws SettingNotFoundException, InvalidSettingException {
+        LOGGER.debug("Parsing zone: " + zoneName + "...");
         AuthenticationPolicy policy = parsePolicy(specification, specification.getSetting("zones", zoneName, "policy"));
         AuthenticationConfiguration.Authenticator authenticator;
         if (specification.hasSetting("zones", zoneName, "authenticator")) {
@@ -132,6 +135,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
     }
 
     private AuthenticationConfiguration.Authenticator parseAuthenticator(String authenticatorName, Specification specification) throws InvalidSpecificationException {
+        LOGGER.debug("Parsing authenticator: " + authenticatorName + "...");
         String onFailure;
         if (specification.hasSetting("authenticators", authenticatorName, "onFailure")) {
             onFailure = Specifications.parseString(specification, "authenticators", authenticatorName, "onFailure");
@@ -158,7 +162,6 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         }
     }
 
-    @SuppressWarnings("unchecked")
     private Configuration parseAuthenticationConfiguration(String authenticatorName, Specification specification) throws InvalidSpecificationException {
         Specification.Setting configTypeSetting = specification.getSetting("authenticators", authenticatorName, "configuration", "type");
         Class<?> configurationClass = parseClass(specification, configTypeSetting);
@@ -167,7 +170,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         }
         try {
             Specification configSpecification = MapSpecification.create(specification, "authenticators", authenticatorName, "configuration", "settings");
-            return ConfigurationProvider.get().parseConfiguration((Class<? extends Configuration>) configurationClass, configSpecification);
+            return ConfigurationProvider.get().parseConfiguration(Types.cast(configurationClass), configSpecification);
         } catch (ConfigurationNotFoundException cause) {
             throw new InvalidSettingException(specification, specification.getSetting("authenticators", authenticatorName, "configuration", "settings"), cause.getCause());
         }

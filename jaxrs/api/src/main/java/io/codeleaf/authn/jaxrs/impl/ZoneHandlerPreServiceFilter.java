@@ -122,15 +122,20 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     private void handleOptionalPolicy(ContainerRequestContext containerRequestContext) throws AuthenticationException {
         Response response = authenticate(containerRequestContext);
         if (response != null) {
+            LOGGER.debug("Sending handshake response...");
             containerRequestContext.abortWith(response);
+            containerRequestContext.setProperty("aborted", true);
+        } else {
+            LOGGER.debug("Policy is OPTIONAL, we are " + (!AuthenticationContext.isAuthenticated() ? "NOT " : "") + "authenticated");
         }
-        LOGGER.debug("Policy is OPTIONAL, we are " + (!AuthenticationContext.isAuthenticated() ? "NOT " : "") + "authenticated");
     }
 
     private void handleRequiredPolicy(ContainerRequestContext containerRequestContext) throws AuthenticationException {
         Response response = authenticate(containerRequestContext);
         if (response != null) {
+            LOGGER.debug("Sending handshake response...");
             containerRequestContext.abortWith(response);
+            containerRequestContext.setProperty("aborted", true);
         } else {
             if (AuthenticationContext.isAuthenticated()) {
                 LOGGER.debug("Policy is REQUIRED, we are authenticated");
