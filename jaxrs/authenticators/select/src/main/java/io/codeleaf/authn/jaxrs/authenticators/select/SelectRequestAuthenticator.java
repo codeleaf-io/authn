@@ -25,14 +25,14 @@ public final class SelectRequestAuthenticator implements JaxrsRequestAuthenticat
     }
 
     @Override
-    public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
+    public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         String authenticatorName = requestContext.getUriInfo().getQueryParameters().getFirst(configuration.getParameterName());
         if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
             return null;
         }
         JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
         authenticators.set(authenticator);
-        return authenticator.authenticate(requestContext, authenticatorContext);
+        return authenticator.authenticate(requestContext);
     }
 
     @Override

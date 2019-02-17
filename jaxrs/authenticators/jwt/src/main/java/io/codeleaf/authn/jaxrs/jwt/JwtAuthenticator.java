@@ -28,7 +28,7 @@ public final class JwtAuthenticator implements JaxrsRequestAuthenticator {
     }
 
     @Override
-    public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
+    public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         AuthenticationContext authenticationContext;
         String sessionId = protocol.getSessionId(requestContext);
         if (sessionId != null) {

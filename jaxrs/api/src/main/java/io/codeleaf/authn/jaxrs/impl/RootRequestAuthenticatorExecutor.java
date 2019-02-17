@@ -78,7 +78,7 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
         }
 
         @Override
-        public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
+        public AuthenticationContext authenticate(ContainerRequestContext requestContext) {
             return null;
         }
     }
