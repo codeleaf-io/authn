@@ -11,7 +11,12 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
-public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthenticator.AuthenticatorContext {
+public class JaxrsRequestAuthenticatorExecutor {
+
+    public interface ExecutorAware {
+
+        void init(JaxrsRequestAuthenticatorExecutor executor);
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JaxrsRequestAuthenticatorExecutor.class);
 
@@ -22,7 +27,7 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
     private JaxrsRequestAuthenticatorExecutor onFailure;
     private AuthenticationContext authenticationContext;
 
-    public JaxrsRequestAuthenticatorExecutor(String authenticatorName, JaxrsRequestAuthenticator authenticator, HandshakeStateHandler handshakeStateHandler, JaxrsRequestAuthenticatorExecutor parent) {
+    JaxrsRequestAuthenticatorExecutor(String authenticatorName, JaxrsRequestAuthenticator authenticator, HandshakeStateHandler handshakeStateHandler, JaxrsRequestAuthenticatorExecutor parent) {
         this.authenticatorName = authenticatorName;
         this.authenticator = authenticator;
         this.handshakeStateHandler = handshakeStateHandler;
@@ -50,7 +55,7 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
         List<String> authenticatorNames = handshakeStateHandler.getHandshakeState(requestContext).getAuthenticatorNames();
         authenticatorNames.add(authenticatorName);
         LOGGER.debug("Calling authenticate() on " + authenticator.getClass().getCanonicalName() + "...");
-        authenticationContext = authenticator.authenticate(requestContext, this);
+        authenticationContext = authenticator.authenticate(requestContext);
         if (authenticationContext != null) {
             LOGGER.debug("Proceeding to parent: " + parent.authenticator.getClass().getCanonicalName() + "...");
             authenticatorNames.remove(authenticatorNames.size() - 1);
@@ -87,15 +92,16 @@ public class JaxrsRequestAuthenticatorExecutor implements JaxrsRequestAuthentica
 
     public void onServiceCompleted(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
         LOGGER.debug("Calling onServiceCompleted() on " + authenticator.getClass().getCanonicalName() + "...");
-        authenticator.onServiceCompleted(containerRequestContext, containerResponseContext, authenticationContext, this);
+        authenticator.onServiceCompleted(containerRequestContext, containerResponseContext, authenticationContext);
     }
 
-    @Override
     public void setOnFailure(String authenticatorName, JaxrsRequestAuthenticator authenticator) {
         onFailure = new JaxrsRequestAuthenticatorExecutor(authenticatorName, authenticator, handshakeStateHandler, this);
+        if (authenticator instanceof ExecutorAware) {
+            ((ExecutorAware) authenticator).init(this);
+        }
     }
 
-    @Override
     public JaxrsRequestAuthenticator getParent() {
         return parent.getAuthenticator();
     }

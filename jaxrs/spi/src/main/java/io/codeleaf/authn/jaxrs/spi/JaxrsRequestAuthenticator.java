@@ -9,17 +9,9 @@ import javax.ws.rs.core.Response;
 
 public interface JaxrsRequestAuthenticator {
 
-    interface AuthenticatorContext {
-
-        void setOnFailure(String authenticatorName, JaxrsRequestAuthenticator authenticator);
-
-        JaxrsRequestAuthenticator getParent();
-
-    }
-
     String getAuthenticationScheme();
 
-    AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException;
+    AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException;
 
     /**
      * Returns <code>null</code> when we want to continue to the next configured authenticator.
@@ -37,7 +29,7 @@ public interface JaxrsRequestAuthenticator {
         return null;
     }
 
-    default void onServiceCompleted(ContainerRequestContext requestContext, ContainerResponseContext responseContext, AuthenticationContext context, AuthenticatorContext authenticatorContext) {
+    default void onServiceCompleted(ContainerRequestContext requestContext, ContainerResponseContext responseContext, AuthenticationContext context) {
     }
 
     default Object getResource() {

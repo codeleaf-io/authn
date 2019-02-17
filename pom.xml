@@ -20,6 +20,7 @@
         <module>jaxrs/api</module>
         <module>jaxrs/spi</module>
         <module>jaxrs/authenticators/basic</module>
+        <module>jaxrs/authenticators/form</module>
         <module>jaxrs/authenticators/jwt</module>
         <module>jaxrs/authenticators/oauth</module>
         <module>jaxrs/authenticators/select</module>

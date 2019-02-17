@@ -38,7 +38,7 @@ public final class LinkedInAuthenticator extends OAuthAuthenticator {
     }
 
     @Override
-    public AuthenticationContext authenticate(ContainerRequestContext requestContext, AuthenticatorContext authenticatorContext) throws AuthenticationException {
+    public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         try {
             String authorizationToken = requestContext.getHeaderString(HEADER_KEY);
             AuthenticationContext authenticationContext;
