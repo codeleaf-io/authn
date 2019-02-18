@@ -185,7 +185,6 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         try {
             LOGGER.debug("Initializing authenticator: " + authenticator.getName());
             Class<? extends Configuration> configClass = authenticator.getConfiguration().getClass();
-
             Method method = getMethod(authenticator, configClass);
             Object instance = null;
             if (method != null) {
@@ -195,6 +194,9 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
                 if (constructor != null) {
                     instance = constructor.newInstance(authenticator.getConfiguration());
                 }
+            }
+            if (instance == null) {
+                throw new IllegalStateException("Null returned during instantiation for: " + authenticator.getName());
             }
             AuthenticatorRegistry.register(authenticator.getName(), instance);
         } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException | InstantiationException cause) {

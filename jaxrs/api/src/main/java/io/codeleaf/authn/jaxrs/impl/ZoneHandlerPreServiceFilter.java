@@ -8,7 +8,6 @@ import io.codeleaf.authn.jaxrs.Authentication;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
-import io.codeleaf.common.utils.Types;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +15,11 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter {
@@ -56,8 +57,9 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
                 LOGGER.debug(String.format("Zone matched: '%s' for: %s", zone.getName(), uriInfo.getPath()));
             }
             AuthenticationPolicy policy = determinePolicy(authentication, zone);
-            setHandshakeState(containerRequestContext);
-            setAuthenticatorExecutorStack(containerRequestContext, authentication, zone);
+            String authenticatorName = determineAuthenticatorName(authentication, zone);
+            handshakeStateHandler.setHandshakeState(containerRequestContext);
+            setAuthenticatorExecutorStack(containerRequestContext, authenticatorName);
             switch (policy) {
                 case NONE:
                     handleNonePolicy(containerRequestContext);
@@ -78,23 +80,9 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
         }
     }
 
-    private void setHandshakeState(ContainerRequestContext containerRequestContext) {
-        HandshakeState extractedState = handshakeStateHandler.extractHandshakeState(containerRequestContext);
-        if (extractedState != null) {
-            LOGGER.debug("Handshake state: " + extractedState.getAuthenticatorNames());
-        } else {
-            LOGGER.debug("New handshake for: " + containerRequestContext.getUriInfo().getRequestUri());
-        }
-        handshakeStateHandler.setHandshakeState(containerRequestContext,
-                extractedState == null
-                        ? new HandshakeState(uriInfo.getRequestUri())
-                        : extractedState);
-    }
-
-    private void setAuthenticatorExecutorStack(ContainerRequestContext containerRequestContext, Authentication authentication, AuthenticationConfiguration.Zone zone) {
+    private void setAuthenticatorExecutorStack(ContainerRequestContext containerRequestContext, String authenticatorName) {
         JaxrsRequestAuthenticatorExecutor root = new RootRequestAuthenticatorExecutor(authenticationContextManager, handshakeStateHandler);
         JaxrsRequestAuthenticatorExecutor current = root;
-        String authenticatorName = determineAuthenticatorName(authentication, zone);
         Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = new HashMap<>();
         while (authenticatorName != null) {
             current.setOnFailure(authenticatorName, AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
@@ -107,9 +95,18 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     }
 
     private AuthenticationPolicy determinePolicy(Authentication authentication, AuthenticationConfiguration.Zone zone) {
-        return authentication != null
+        return isHandshakePath()
+                ? AuthenticationPolicy.NONE
+                : authentication != null
                 ? authentication.value()
-                : zone != null ? zone.getPolicy() : AuthenticationPolicy.OPTIONAL;
+                : zone != null
+                ? zone.getPolicy()
+                : AuthenticationPolicy.OPTIONAL;
+    }
+
+    private boolean isHandshakePath() {
+        List<PathSegment> segments = uriInfo.getPathSegments();
+        return segments.size() > 0 && segments.get(0).getPath().equals(handshakeStateHandler.getPath().replace("/", ""));
     }
 
     private String determineAuthenticatorName(Authentication authentication, AuthenticationConfiguration.Zone zone) {
@@ -125,7 +122,7 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     }
 
     private void handleOptionalPolicy(ContainerRequestContext containerRequestContext) throws AuthenticationException {
-        Response response = authenticate(containerRequestContext);
+        Response response = handshakeStateHandler.getExecutor(containerRequestContext).authenticate(containerRequestContext);
         if (response != null) {
             handleHandshakeInProgress(containerRequestContext, response);
         } else {
@@ -135,8 +132,8 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
     }
 
     private void handleRequiredPolicy(ContainerRequestContext containerRequestContext) throws AuthenticationException {
-        Response response = authenticate(containerRequestContext);
-        if (response == null) {
+        Response response = handshakeStateHandler.getExecutor(containerRequestContext).authenticate(containerRequestContext);
+        if (response != null) {
             handleHandshakeInProgress(containerRequestContext, response);
         } else {
             if (AuthenticationContext.isAuthenticated()) {
@@ -153,27 +150,5 @@ public final class ZoneHandlerPreServiceFilter implements ContainerRequestFilter
         containerRequestContext.abortWith(response);
         containerRequestContext.setProperty("aborted", true);
         containerRequestContext.setProperty("performHandshake", true);
-    }
-
-    private Response authenticate(ContainerRequestContext containerRequestContext) throws AuthenticationException {
-        JaxrsRequestAuthenticatorExecutor executor;
-        HandshakeState state = handshakeStateHandler.getHandshakeState(containerRequestContext);
-        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = Types.cast(containerRequestContext.getProperty("executorIndex"));
-        if (executorIndex.isEmpty()) {
-            if (!state.getAuthenticatorNames().isEmpty()) {
-                throw new IllegalArgumentException("Invalid amount of authenticator names found!");
-            }
-            executor = ((JaxrsRequestAuthenticatorExecutor) containerRequestContext.getProperty("authenticatorStack"));
-        } else {
-            if (state.getAuthenticatorNames().isEmpty()) {
-                executor = ((JaxrsRequestAuthenticatorExecutor) containerRequestContext.getProperty("authenticatorStack"));
-            } else {
-                executor = executorIndex.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
-            }
-            if (executor == null) {
-                throw new IllegalArgumentException("Invalid authenticator name in authentication handshake!");
-            }
-        }
-        return executor.authenticate(containerRequestContext);
     }
 }

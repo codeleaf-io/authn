@@ -30,7 +30,7 @@ public final class AuthenticationFilterFactory {
     }
 
     public ContainerResponseFilter createResponseFilter() {
-        return new ZoneHandlerPostServiceFilter();
+        return new ZoneHandlerPostServiceFilter(handshakeStateHandler);
     }
 
     public static AuthenticationFilterFactory create() throws ConfigurationException, IOException {

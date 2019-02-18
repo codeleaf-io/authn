@@ -11,7 +11,9 @@ public interface JaxrsRequestAuthenticator {
 
     String getAuthenticationScheme();
 
-    AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException;
+    default AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
+        return null;
+    }
 
     /**
      * Returns <code>null</code> when we want to continue to the next configured authenticator.
