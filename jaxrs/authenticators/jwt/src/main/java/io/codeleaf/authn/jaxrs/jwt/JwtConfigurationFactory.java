@@ -39,7 +39,7 @@ public final class JwtConfigurationFactory extends AbstractConfigurationFactory<
     }
 
     @Override
-    protected JwtConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public JwtConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
         return new JwtConfiguration(
                 getProtocol(specification),
                 getStore(specification),
