@@ -46,6 +46,7 @@ public final class FormAuthenticator implements JaxrsRequestAuthenticator, Jaxrs
         return this;
     }
 
+    // TODO : include the handshake state : landing url + authenticator names
     @GET
     @Path("/login")
     @Produces(MediaType.TEXT_HTML)
@@ -58,6 +59,7 @@ public final class FormAuthenticator implements JaxrsRequestAuthenticator, Jaxrs
                 + "</form></body></html>";
     }
 
+    // TODO : we can be redirected here, but how do we get the right authenticator stack?
     @Authenticate
     @POST
     @Path("/login")

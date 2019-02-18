@@ -10,16 +10,6 @@ import java.util.Set;
 
 public class SecureApplication extends Application {
 
-    private final AuthenticationFilterFactory factory;
-
-    public SecureApplication() {
-        try {
-            this.factory = AuthenticationFilterFactory.create();
-        } catch (Exception cause) {
-            throw new ExceptionInInitializerError(cause);
-        }
-    }
-
     protected Set<Class<?>> getSecureClasses() {
         return Collections.emptySet();
     }
@@ -37,8 +27,7 @@ public class SecureApplication extends Application {
 
     public final Set<Object> getSingletons() {
         Set<Object> singletons = new LinkedHashSet<>();
-        singletons.add(factory.createRequestFilter());
-        singletons.add(factory.createResponseFilter());
+        singletons.addAll(AuthenticationFilterFactory.create());
         singletons.add(CorsFilter.create());
         singletons.addAll(getSecureSingletons());
         return singletons;

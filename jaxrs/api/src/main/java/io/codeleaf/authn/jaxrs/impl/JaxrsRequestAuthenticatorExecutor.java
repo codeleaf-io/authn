@@ -57,7 +57,8 @@ public class JaxrsRequestAuthenticatorExecutor {
 
     public Response authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         Response response;
-        List<String> authenticatorNames = handshakeStateHandler.getHandshakeState(requestContext).getAuthenticatorNames();
+        HandshakeState state = (HandshakeState) requestContext.getProperty("handshakeState");
+        List<String> authenticatorNames = state.getAuthenticatorNames();
         authenticatorNames.add(authenticatorName);
         LOGGER.debug("Calling authenticate() on " + authenticator.getClass().getCanonicalName() + "...");
         authenticationContext = authenticator.authenticate(requestContext);
@@ -87,7 +88,8 @@ public class JaxrsRequestAuthenticatorExecutor {
         if (responseBuilder != null) {
             response = buildResponse(requestContext, responseBuilder);
         } else {
-            List<String> authenticatorNames = handshakeStateHandler.getHandshakeState(requestContext).getAuthenticatorNames();
+            HandshakeState state = (HandshakeState) requestContext.getProperty("handshakeState");
+            List<String> authenticatorNames = state.getAuthenticatorNames();
             LOGGER.debug("Proceeding to parent: " + parent.authenticator.getClass().getCanonicalName() + "...");
             authenticatorNames.remove(authenticatorNames.size() - 1);
             response = parent.onFailureCompleted(requestContext, authenticationContext);
@@ -115,10 +117,10 @@ public class JaxrsRequestAuthenticatorExecutor {
         return parent;
     }
 
-    private Response buildResponse(ContainerRequestContext containerRequestContext, Response.ResponseBuilder responseBuilder) {
-        HandshakeState handshakeState = handshakeStateHandler.getHandshakeState(containerRequestContext);
-        LOGGER.debug("Building response with handshake state: " + handshakeState.getAuthenticatorNames());
-        handshakeStateHandler.setHandshakeState(containerRequestContext, responseBuilder, handshakeState);
+    private Response buildResponse(ContainerRequestContext requestContext, Response.ResponseBuilder responseBuilder) {
+        HandshakeState state = (HandshakeState) requestContext.getProperty("handshakeState");
+        LOGGER.debug("Building response with handshake state: " + state.getAuthenticatorNames());
+        handshakeStateHandler.setHandshakeState(requestContext, responseBuilder, state);
         return responseBuilder.build();
     }
 }
