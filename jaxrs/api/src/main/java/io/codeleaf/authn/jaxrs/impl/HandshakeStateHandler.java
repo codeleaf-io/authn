@@ -1,9 +1,11 @@
 package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.jaxrs.HandshakeConfiguration;
+import io.codeleaf.common.utils.Types;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;
+import java.util.Map;
 import java.util.Objects;
 
 public final class HandshakeStateHandler {
@@ -12,6 +14,22 @@ public final class HandshakeStateHandler {
 
     public HandshakeStateHandler(HandshakeConfiguration configuration) {
         this.configuration = configuration;
+    }
+
+    public HandshakeConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public String getPath() {
+        return configuration.getPath();
+    }
+
+    public void setHandshakeState(ContainerRequestContext containerRequestContext) {
+        HandshakeState extractedState = extractHandshakeState(containerRequestContext);
+        setHandshakeState(containerRequestContext,
+                extractedState == null
+                        ? new HandshakeState(containerRequestContext.getUriInfo().getRequestUri())
+                        : extractedState);
     }
 
     public void setHandshakeState(ContainerRequestContext containerRequestContext, HandshakeState handshakeState) {
@@ -51,5 +69,28 @@ public final class HandshakeStateHandler {
             response = null;
         }
         return response;
+    }
+
+    public JaxrsRequestAuthenticatorExecutor getExecutor(ContainerRequestContext containerRequestContext) {
+        JaxrsRequestAuthenticatorExecutor executor;
+        HandshakeState state = getHandshakeState(containerRequestContext);
+        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = Types.cast(containerRequestContext.getProperty("executorIndex"));
+        if (executorIndex.isEmpty()) {
+            if (!state.getAuthenticatorNames().isEmpty()) {
+                throw new IllegalArgumentException("Invalid amount of authenticator names found!");
+            }
+            executor = ((JaxrsRequestAuthenticatorExecutor) containerRequestContext.getProperty("authenticatorStack"));
+        } else {
+            if (state.getAuthenticatorNames().isEmpty()) {
+                executor = ((JaxrsRequestAuthenticatorExecutor) containerRequestContext.getProperty("authenticatorStack"));
+            } else {
+                executor = executorIndex.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
+            }
+            if (executor == null) {
+                throw new IllegalArgumentException("Invalid authenticator name in authentication handshake!");
+            }
+        }
+        System.out.println("getting: " + executor.getAuthenticatorName());
+        return executor;
     }
 }

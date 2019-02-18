@@ -29,12 +29,14 @@ public class SecureApplication extends Application {
     }
 
     public final Set<Class<?>> getClasses() {
-        return getSecureClasses();
+        Set<Class<?>> classes = new LinkedHashSet<>();
+        classes.add(AuthenticatorResources.class);
+        classes.addAll(getSecureClasses());
+        return classes;
     }
 
     public final Set<Object> getSingletons() {
         Set<Object> singletons = new LinkedHashSet<>();
-        singletons.addAll(AuthenticatorResources.create().getAllResources());
         singletons.add(factory.createRequestFilter());
         singletons.add(factory.createResponseFilter());
         singletons.add(CorsFilter.create());

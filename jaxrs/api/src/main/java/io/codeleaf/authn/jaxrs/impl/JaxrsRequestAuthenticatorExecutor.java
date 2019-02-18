@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.Response;
+import java.net.URI;
 import java.util.List;
 
 public class JaxrsRequestAuthenticatorExecutor {
@@ -40,6 +41,10 @@ public class JaxrsRequestAuthenticatorExecutor {
 
     public JaxrsRequestAuthenticator getAuthenticator() {
         return authenticator;
+    }
+
+    public URI getAuthenticatorUri() {
+        return URI.create(handshakeStateHandler.getPath() + "/" + HtmlUtil.urlEncode(authenticatorName));
     }
 
     public HandshakeStateHandler getHandshakeStateHandler() {
@@ -98,12 +103,16 @@ public class JaxrsRequestAuthenticatorExecutor {
     public void setOnFailure(String authenticatorName, JaxrsRequestAuthenticator authenticator) {
         onFailure = new JaxrsRequestAuthenticatorExecutor(authenticatorName, authenticator, handshakeStateHandler, this);
         if (authenticator instanceof ExecutorAware) {
-            ((ExecutorAware) authenticator).init(this);
+            ((ExecutorAware) authenticator).init(onFailure);
         }
     }
 
     public JaxrsRequestAuthenticator getParent() {
         return parent.getAuthenticator();
+    }
+
+    public JaxrsRequestAuthenticatorExecutor getParentExecutor() {
+        return parent;
     }
 
     private Response buildResponse(ContainerRequestContext containerRequestContext, Response.ResponseBuilder responseBuilder) {
