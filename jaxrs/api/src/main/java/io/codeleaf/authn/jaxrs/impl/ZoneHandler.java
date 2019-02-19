@@ -240,8 +240,10 @@ public final class ZoneHandler {
                 if (entity == null) {
                     response = getCurrentExecutor(requestContext).getOnFailure().authenticate(requestContext);
                 } else if (entity instanceof AuthenticationContext) {
+                    List<String> authenticatorNames = getHandshakeState(requestContext).getAuthenticatorNames();
+                    authenticatorNames.remove(authenticatorNames.size() - 1);
                     AuthenticationContext authenticationContext = (AuthenticationContext) entity;
-                    response = getCurrentExecutor(requestContext).getParentExecutor().onFailureCompleted(requestContext, authenticationContext);
+                    response = getCurrentExecutor(requestContext).onFailureCompleted(requestContext, authenticationContext);
                 } else {
                     LOGGER.error("Invalid return type from @Authenticate resource: " + entity.getClass());
                     response = Response.serverError().build();
