@@ -8,6 +8,7 @@ import io.codeleaf.authn.jaxrs.Authentication;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
 import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.spi.Authenticate;
+import io.codeleaf.authn.jaxrs.spi.HandshakeState;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 import io.codeleaf.common.utils.Methods;
 import io.codeleaf.common.utils.Types;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.container.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -50,9 +52,11 @@ public final class ZoneHandler {
         @Override
         public void filter(ContainerRequestContext requestContext) {
             URI requestUri = requestContext.getUriInfo().getRequestUri();
-            LOGGER.debug("Processing request for endpoint: " + requestUri);
+            LOGGER.debug("Processing request for endpoint: " + requestContext.getMethod() + " " + requestUri);
+            HandshakeSessionManager.get().setRequestContext(requestContext);
             if (handshakeStateHandler.isHandshakePath(requestContext.getUriInfo())) {
                 setTrue(requestContext, "handshakeResource");
+                requestContext.setProperty("authenticator", handshakeStateHandler.getHandshakeAuthenticatorName(requestContext.getUriInfo()));
             }
         }
     }
@@ -64,20 +68,52 @@ public final class ZoneHandler {
 
         @Override
         public void filter(ContainerRequestContext requestContext) {
-            setTrue(requestContext, "matched");
-            LOGGER.debug("Resource matched: " + resourceInfo.getResourceClass().getCanonicalName() + "#" + resourceInfo.getResourceMethod().getName());
-            HandshakeState state = handshakeStateHandler.extractHandshakeState(requestContext);
-            LOGGER.debug("Handshake state: " + (state == null ? "none" : state.getUri() + " " + state.getAuthenticatorNames()));
-            setHandshakeState(requestContext, state == null ? new HandshakeState(requestContext.getUriInfo().getRequestUri()) : state);
-            Authentication authentication = Authentications.getAuthentication(resourceInfo);
-            AuthenticationConfiguration.Zone zone = Zones.getZone(requestContext.getUriInfo().getPath(), configuration);
-            LOGGER.debug("Configuration: "
-                    + "authentication = " + (authentication == null ? "none" : authentication.authenticator() + ":" + authentication.value())
-                    + ", zone = " + (zone == null ? "none" : zone.getName()));
-            String authenticatorName = determineAuthenticatorName(authentication, zone);
-            AuthenticationPolicy policy = determinePolicy(authentication, zone, isTrue(requestContext, "handshakeResource") ? AuthenticationPolicy.NONE : AuthenticationPolicy.OPTIONAL);
-            setExecutors(requestContext, authenticatorName);
-            handleAuthentication(requestContext, policy);
+            try {
+                setTrue(requestContext, "matched");
+                LOGGER.debug("Resource matched: " + resourceInfo.getResourceClass().getCanonicalName() + "#" + resourceInfo.getResourceMethod().getName());
+                HandshakeState state = handshakeStateHandler.extractHandshakeState(requestContext);
+                LOGGER.debug("Extracted handshake state: " + (state == null ? "none" : state.getUri() + " " + state.getAuthenticatorNames()));
+                if (isTrue(requestContext, "handshakeResource")) {
+                    String authenticatorName = (String) requestContext.getProperty("authenticator");
+                    if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
+                        throw new AuthenticationException();
+                    }
+                    JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
+                    LOGGER.debug("Calling setHandshakeState() on " + authenticator.getClass().getCanonicalName());
+                    state = authenticator.setHandshakeState(requestContext, resourceInfo, state);
+                    if (state == null) {
+                        setTrue(requestContext, "aborted");
+                        requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST).build());
+                        throw new AuthenticationException("No state set by authenticator!");
+                    }
+                    setHandshakeState(requestContext, state);
+                } else {
+                    setHandshakeState(requestContext, state == null ? new HandshakeState(requestContext.getUriInfo().getRequestUri()) : state);
+                }
+                Authentication authentication = Authentications.getAuthentication(resourceInfo);
+                AuthenticationConfiguration.Zone zone = Zones.getZone(requestContext.getUriInfo().getPath(), configuration);
+                LOGGER.debug("Configuration: "
+                        + "authentication = " + (authentication == null ? "none" : authentication.authenticator() + ":" + authentication.value())
+                        + ", zone = " + (zone == null ? "none" : zone.getName()));
+                String authenticatorName = determineAuthenticatorName(authentication, zone);
+                AuthenticationPolicy policy = determinePolicy(authentication, zone, isTrue(requestContext, "handshakeResource") ? AuthenticationPolicy.NONE : AuthenticationPolicy.OPTIONAL);
+                setExecutors(requestContext, authenticatorName);
+                handleAuthentication(requestContext, policy);
+                if (isTrue(requestContext, "handshakeResource")) {
+                    setExecutors(requestContext, state.getFirstAuthenticatorName());
+                    HandshakeSessionManager.get().setExecutor(getCurrentExecutor(requestContext));
+                }
+            } catch (AuthenticationException cause) {
+                if (!isTrue(requestContext, "aborted")) {
+                    setTrue(requestContext, "aborted");
+                    requestContext.abortWith(SERVER_ERROR);
+                }
+            } catch (IOException cause) {
+                if (!isTrue(requestContext, "aborted")) {
+                    setTrue(requestContext, "aborted");
+                    requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST).build());
+                }
+            }
         }
     }
 
@@ -88,12 +124,16 @@ public final class ZoneHandler {
 
         @Override
         public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-            if (!isTrue(requestContext, "matched")) {
-                LOGGER.warn("Endpoint not matched: " + requestContext.getRequest().getMethod() + " " + requestContext.getUriInfo().getAbsolutePath());
-            } else if (isTrue(requestContext, "handshakeResource")) {
-                postHandshakeCall(requestContext, responseContext, resourceInfo);
-            } else {
-                postServiceCall(requestContext, responseContext);
+            try {
+                if (!isTrue(requestContext, "matched")) {
+                    LOGGER.warn("Endpoint not matched: " + requestContext.getRequest().getMethod() + " " + requestContext.getUriInfo().getAbsolutePath());
+                } else if (isTrue(requestContext, "handshakeResource")) {
+                    postHandshakeCall(requestContext, responseContext, resourceInfo);
+                } else {
+                    postServiceCall(requestContext, responseContext);
+                }
+            } finally {
+                HandshakeSessionManager.get().clear();
             }
         }
     }
@@ -126,10 +166,11 @@ public final class ZoneHandler {
             }
             executor = ((JaxrsRequestAuthenticatorExecutor) requestContext.getProperty("executorRoot"));
         } else {
-            if (state.getAuthenticatorNames().isEmpty()) {
+            String currentAuthenticatorName = state.getLastAuthenticatorName();
+            if (currentAuthenticatorName == null) {
                 executor = ((JaxrsRequestAuthenticatorExecutor) requestContext.getProperty("executorRoot"));
             } else {
-                executor = executorIndex.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
+                executor = executorIndex.get(currentAuthenticatorName);
             }
             if (executor == null) {
                 throw new IllegalArgumentException("Invalid authenticator name in authentication handshake!");
@@ -188,7 +229,12 @@ public final class ZoneHandler {
 
     private void postHandshakeCall(ContainerRequestContext requestContext, ContainerResponseContext responseContext, ResourceInfo resourceInfo) {
         try {
+            if (isTrue(requestContext, "aborted")) {
+                LOGGER.debug("Aborting request with " + responseContext.getStatus() + " for: " + requestContext.getUriInfo().getRequestUri());
+                return;
+            }
             if (Methods.hasAnnotation(resourceInfo.getResourceMethod(), Authenticate.class)) {
+                setTrue(requestContext, "@Authenticate");
                 Object entity = responseContext.getEntity();
                 Response response;
                 if (entity == null) {
@@ -204,7 +250,7 @@ public final class ZoneHandler {
                     HandshakeState state = getHandshakeState(requestContext);
                     if (!handshakeStateHandler.isHandshakePath(state.getUri())) {
                         LOGGER.debug("Sending redirect to service...");
-                        response = Response.temporaryRedirect(state.getUri()).build();
+                        response = Response.seeOther(state.getUri()).build();
                     } else {
                         LOGGER.debug("Sending no content...");
                         response = Response.noContent().build();
@@ -212,12 +258,12 @@ public final class ZoneHandler {
                 } else {
                     LOGGER.debug("Sending authenticator response...");
                 }
-                requestContext.setProperty("aborted", true);
-                requestContext.abortWith(response);
+                replaceResponse(response, responseContext);
+            } else {
+                LOGGER.debug("Sending authenticator response...");
             }
         } catch (AuthenticationException cause) {
-            requestContext.setProperty("aborted", true);
-            requestContext.abortWith(SERVER_ERROR);
+            replaceResponse(SERVER_ERROR, responseContext);
         }
     }
 
@@ -237,19 +283,33 @@ public final class ZoneHandler {
         }
     }
 
-    private static void setTrue(ContainerRequestContext requestContext, String propertyName) {
+    private void replaceResponse(Response response, ContainerResponseContext responseContext) {
+        responseContext.setStatus(response.getStatus());
+        responseContext.getHeaders().clear();
+        for (Map.Entry<String, List<Object>> header : response.getHeaders().entrySet()) {
+            for (Object value : header.getValue()) {
+                responseContext.getHeaders().add(header.getKey(), value);
+            }
+        }
+        responseContext.setEntity(response.getEntity());
+    }
+
+    public static void setTrue(ContainerRequestContext requestContext, String propertyName) {
         requestContext.setProperty(propertyName, Boolean.TRUE);
     }
 
-    private static boolean isTrue(ContainerRequestContext requestContext, String propertyName) {
+    public static boolean isTrue(ContainerRequestContext requestContext, String propertyName) {
         return Boolean.TRUE.equals(requestContext.getProperty(propertyName));
     }
 
-    private static void setHandshakeState(ContainerRequestContext requestContext, HandshakeState state) {
-        requestContext.setProperty("handshakeState", state == null ? new HandshakeState(requestContext.getUriInfo().getRequestUri()) : state);
+    public static void setHandshakeState(ContainerRequestContext requestContext, HandshakeState state) {
+        state = state == null ? new HandshakeState(requestContext.getUriInfo().getRequestUri()) : state;
+        HandshakeSessionManager.get().setState(state);
+        requestContext.setProperty("handshakeState", state);
+        LOGGER.debug("Handshake state set: " + state.getUri() + " " + state.getAuthenticatorNames());
     }
 
-    private static HandshakeState getHandshakeState(ContainerRequestContext requestContext) {
+    public static HandshakeState getHandshakeState(ContainerRequestContext requestContext) {
         HandshakeState state = (HandshakeState) requestContext.getProperty("handshakeState");
         if (state == null) {
             throw new IllegalStateException("No handshake state set!");

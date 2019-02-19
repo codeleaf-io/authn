@@ -1,6 +1,7 @@
 package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.jaxrs.HandshakeConfiguration;
+import io.codeleaf.authn.jaxrs.spi.HandshakeState;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.PathSegment;
@@ -58,12 +59,27 @@ public final class HandshakeStateHandler {
     }
 
     public boolean isHandshakePath(URI uri) {
-        String[] segments = uri.toString().split("/");
+        if (uri == null) {
+            return false;
+        }
+        String path = uri.getPath();
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        String[] segments = path.split("/");
         return segments.length > 0 && Objects.equals(segments[0], getPath().replace("/", ""));
     }
 
     public boolean isHandshakePath(UriInfo uriInfo) {
         List<PathSegment> segments = uriInfo.getPathSegments();
         return segments.size() > 0 && segments.get(0).getPath().equals(getPath().replace("/", ""));
+    }
+
+    public String getHandshakeAuthenticatorName(UriInfo uriInfo) {
+        List<PathSegment> segments = uriInfo.getPathSegments();
+        if (segments.size() < 1) {
+            throw new IllegalArgumentException();
+        }
+        return segments.get(1).getPath();
     }
 }

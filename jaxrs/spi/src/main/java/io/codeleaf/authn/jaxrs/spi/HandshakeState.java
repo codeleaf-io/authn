@@ -1,4 +1,4 @@
-package io.codeleaf.authn.jaxrs.impl;
+package io.codeleaf.authn.jaxrs.spi;
 
 import io.codeleaf.common.utils.StringEncoder;
 
@@ -16,6 +16,17 @@ public final class HandshakeState {
 
     public URI getUri() {
         return uri;
+    }
+
+    public String getLastAuthenticatorName() {
+        return authenticatorNames.isEmpty() ?
+                null : authenticatorNames.get(authenticatorNames.size() - 1);
+
+    }
+
+    public String getFirstAuthenticatorName() {
+        return authenticatorNames.isEmpty() ?
+                null : authenticatorNames.get(0);
     }
 
     public List<String> getAuthenticatorNames() {

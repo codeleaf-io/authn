@@ -1,6 +1,6 @@
 package io.codeleaf.authn.jaxrs.impl;
 
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -48,5 +48,24 @@ public final class HtmlUtil {
             }
         }
         return formFields;
+    }
+
+    public static Map<String, String> decodeForm(InputStream formBody) throws IOException {
+        return decodeForm(inputStreamToString(formBody));
+    }
+
+    private static String inputStreamToString(InputStream is) throws IOException {
+        final int bufferSize = 1024;
+        final char[] buffer = new char[bufferSize];
+        final StringBuilder out = new StringBuilder();
+        try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+            for (; ; ) {
+                int rsz = in.read(buffer, 0, buffer.length);
+                if (rsz < 0)
+                    break;
+                out.append(buffer, 0, rsz);
+            }
+            return out.toString();
+        }
     }
 }

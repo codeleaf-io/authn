@@ -5,7 +5,9 @@ import io.codeleaf.authn.AuthenticationException;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 
 public interface JaxrsRequestAuthenticator {
 
@@ -13,6 +15,10 @@ public interface JaxrsRequestAuthenticator {
 
     default AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         return null;
+    }
+
+    default HandshakeState setHandshakeState(ContainerRequestContext requestContext, ResourceInfo resourceInfo, HandshakeState extractedState) throws AuthenticationException, IOException {
+        return extractedState;
     }
 
     /**
