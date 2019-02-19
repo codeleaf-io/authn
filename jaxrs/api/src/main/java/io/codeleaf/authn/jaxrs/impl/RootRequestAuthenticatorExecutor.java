@@ -16,7 +16,7 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
     private final ThreadLocalAuthenticationContextManager authenticationContextManager;
 
     public RootRequestAuthenticatorExecutor(ThreadLocalAuthenticationContextManager authenticationContextManager, HandshakeStateHandler handshakeStateHandler) {
-        super("ROOT", new RootAuthenticator(), handshakeStateHandler, null);
+        super("root", new RootAuthenticator(), handshakeStateHandler, null);
         this.authenticationContextManager = authenticationContextManager;
     }
 
@@ -42,8 +42,8 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
     }
 
     @Override
-    public JaxrsRequestAuthenticator getParent() {
-        return null;
+    public JaxrsRequestAuthenticatorExecutor getParentExecutor() {
+        return this;
     }
 
     private SecurityContext createSecurityContext(AuthenticationContext authenticationContext, JaxrsRequestAuthenticator authenticator) {
@@ -74,11 +74,6 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
 
         @Override
         public String getAuthenticationScheme() {
-            return null;
-        }
-
-        @Override
-        public AuthenticationContext authenticate(ContainerRequestContext requestContext) {
             return null;
         }
     }
