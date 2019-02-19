@@ -2,6 +2,7 @@ package io.codeleaf.authn.jaxrs.jwt;
 
 import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
+import io.codeleaf.authn.jaxrs.spi.HandshakeState;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 import io.codeleaf.authn.jaxrs.spi.JaxrsSessionIdProtocol;
 import io.codeleaf.authn.spi.SessionDataStore;
@@ -47,7 +48,8 @@ public final class JwtAuthenticator implements JaxrsRequestAuthenticator {
         }
         String jwt = serializer.serialize(authenticationContext);
         String sessionId = store.storeSessionData(jwt);
-        Response.ResponseBuilder responseBuilder = Response.temporaryRedirect(requestContext.getUriInfo().getRequestUri()); // we need to determine correct URI...
+        HandshakeState state = (HandshakeState) requestContext.getProperty("handshakeState");
+        Response.ResponseBuilder responseBuilder = Response.seeOther(state.getUri());
         protocol.setSessionId(requestContext, responseBuilder, sessionId);
         return responseBuilder;
     }
