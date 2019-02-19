@@ -16,12 +16,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.container.*;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 
-// TODO: clean up this file
 public final class ZoneHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZoneHandler.class);
@@ -53,12 +51,8 @@ public final class ZoneHandler {
         public void filter(ContainerRequestContext requestContext) {
             URI requestUri = requestContext.getUriInfo().getRequestUri();
             LOGGER.debug("Processing request for endpoint: " + requestUri);
-            if (hasHandshakePath(requestContext)) {
-                requestContext.setProperty("handshakeResource", true);
-            }
-            HandshakeState state = handshakeStateHandler.extractHandshakeState(requestContext);
-            if (state != null) {
-                requestContext.setProperty("handshakeState", state);
+            if (handshakeStateHandler.isHandshakePath(requestContext.getUriInfo())) {
+                setTrue(requestContext, "handshakeResource");
             }
         }
     }
@@ -70,12 +64,20 @@ public final class ZoneHandler {
 
         @Override
         public void filter(ContainerRequestContext requestContext) {
-            requestContext.setProperty("matched", true);
-            if (Boolean.TRUE.equals(requestContext.getProperty("handshakeResource"))) {
-                preHandshakeCall(requestContext, resourceInfo);
-            } else {
-                preServiceCall(requestContext, resourceInfo);
-            }
+            setTrue(requestContext, "matched");
+            LOGGER.debug("Resource matched: " + resourceInfo.getResourceClass().getCanonicalName() + "#" + resourceInfo.getResourceMethod().getName());
+            HandshakeState state = handshakeStateHandler.extractHandshakeState(requestContext);
+            LOGGER.debug("Handshake state: " + (state == null ? "none" : state.getUri() + " " + state.getAuthenticatorNames()));
+            setHandshakeState(requestContext, state == null ? new HandshakeState(requestContext.getUriInfo().getRequestUri()) : state);
+            Authentication authentication = Authentications.getAuthentication(resourceInfo);
+            AuthenticationConfiguration.Zone zone = Zones.getZone(requestContext.getUriInfo().getPath(), configuration);
+            LOGGER.debug("Configuration: "
+                    + "authentication = " + (authentication == null ? "none" : authentication.authenticator() + ":" + authentication.value())
+                    + ", zone = " + (zone == null ? "none" : zone.getName()));
+            String authenticatorName = determineAuthenticatorName(authentication, zone);
+            AuthenticationPolicy policy = determinePolicy(authentication, zone, isTrue(requestContext, "handshakeResource") ? AuthenticationPolicy.NONE : AuthenticationPolicy.OPTIONAL);
+            setExecutors(requestContext, authenticatorName);
+            handleAuthentication(requestContext, policy);
         }
     }
 
@@ -86,9 +88,9 @@ public final class ZoneHandler {
 
         @Override
         public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-            if (!Boolean.TRUE.equals(requestContext.getProperty("matched"))) {
+            if (!isTrue(requestContext, "matched")) {
                 LOGGER.warn("Endpoint not matched: " + requestContext.getRequest().getMethod() + " " + requestContext.getUriInfo().getAbsolutePath());
-            } else if (Boolean.TRUE.equals(requestContext.getProperty("handshakeResource"))) {
+            } else if (isTrue(requestContext, "handshakeResource")) {
                 postHandshakeCall(requestContext, responseContext, resourceInfo);
             } else {
                 postServiceCall(requestContext, responseContext);
@@ -96,71 +98,87 @@ public final class ZoneHandler {
         }
     }
 
-    private void preHandshakeCall(ContainerRequestContext requestContext, ResourceInfo resourceInfo) {
-        try {
-            LOGGER.debug("Handshake matched: " + resourceInfo.getResourceClass().getCanonicalName() + "." + resourceInfo.getResourceMethod().getName());
-            Authentication authentication = Authentications.getAuthentication(resourceInfo);
-            if (authentication != null) {
-                LOGGER.debug("We found an authentication annotation: " + authentication);
-            }
-            AuthenticationPolicy policy = authentication != null ? authentication.value() : AuthenticationPolicy.NONE;
-            String authenticatorName = authentication != null && !authentication.authenticator().isEmpty() ? authentication.authenticator() : "default";
-            if (requestContext.getProperty("handshakeState") == null) {
-                requestContext.setProperty("handshakeState", new HandshakeState(requestContext.getUriInfo().getRequestUri()));
-            }
-            setAuthenticatorExecutorStack(requestContext, authenticatorName);
-            switch (policy) {
-                case NONE:
-                    handleNonePolicy(requestContext);
-                    break;
-                case OPTIONAL:
-                    handleOptionalPolicy(requestContext);
-                    break;
-                case REQUIRED:
-                    handleRequiredPolicy(requestContext);
-                    break;
-                default:
-                    String message = "Aborting request because we have invalid authentication policy!";
-                    LOGGER.error(message);
-                    throw new IllegalStateException(message);
-            }
-        } catch (IllegalStateException | IllegalArgumentException | AuthenticationException cause) {
-            requestContext.setProperty("aborted", true);
-            requestContext.abortWith(SERVER_ERROR);
+    private void setExecutors(ContainerRequestContext requestContext, String authenticatorName) {
+        JaxrsRequestAuthenticatorExecutor root = new RootRequestAuthenticatorExecutor(authenticationContextManager, handshakeStateHandler);
+        JaxrsRequestAuthenticatorExecutor current = root;
+        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = new HashMap<>();
+        while (authenticatorName != null) {
+            current.setOnFailure(authenticatorName, AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
+            current = current.getOnFailure();
+            executorIndex.put(authenticatorName, current);
+            authenticatorName = configuration.getAuthenticators().get(authenticatorName).getOnFailure();
         }
+        requestContext.setProperty("executorRoot", root);
+        requestContext.setProperty("executorIndex", executorIndex);
     }
 
-    private void preServiceCall(ContainerRequestContext requestContext, ResourceInfo resourceInfo) {
+    private RootRequestAuthenticatorExecutor getRootExecutor(ContainerRequestContext requestContext) {
+        return (RootRequestAuthenticatorExecutor) requestContext.getProperty("executorRoot");
+    }
+
+    private JaxrsRequestAuthenticatorExecutor getCurrentExecutor(ContainerRequestContext requestContext) {
+        JaxrsRequestAuthenticatorExecutor executor;
+        HandshakeState state = getHandshakeState(requestContext);
+        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = Types.cast(requestContext.getProperty("executorIndex"));
+        if (executorIndex.isEmpty()) {
+            if (!state.getAuthenticatorNames().isEmpty()) {
+                throw new IllegalArgumentException("Invalid amount of authenticator names found!");
+            }
+            executor = ((JaxrsRequestAuthenticatorExecutor) requestContext.getProperty("executorRoot"));
+        } else {
+            if (state.getAuthenticatorNames().isEmpty()) {
+                executor = ((JaxrsRequestAuthenticatorExecutor) requestContext.getProperty("executorRoot"));
+            } else {
+                executor = executorIndex.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
+            }
+            if (executor == null) {
+                throw new IllegalArgumentException("Invalid authenticator name in authentication handshake!");
+            }
+        }
+        LOGGER.debug("Current executor: " + executor.getAuthenticatorName());
+        return executor;
+    }
+
+    private static AuthenticationPolicy determinePolicy(Authentication authentication, AuthenticationConfiguration.Zone zone, AuthenticationPolicy defaultPolicy) {
+        return authentication != null
+                ? authentication.value()
+                : zone != null
+                ? zone.getPolicy()
+                : defaultPolicy;
+    }
+
+    private static String determineAuthenticatorName(Authentication authentication, AuthenticationConfiguration.Zone zone) {
+        return authentication != null && !authentication.authenticator().isEmpty()
+                ? authentication.authenticator()
+                : zone != null && zone.getAuthenticator() != null
+                ? zone.getAuthenticator().getName()
+                : "default";
+    }
+
+    private void handleAuthentication(ContainerRequestContext requestContext, AuthenticationPolicy policy) {
         try {
-            LOGGER.debug("Service matched: " + resourceInfo.getResourceClass().getCanonicalName() + "." + resourceInfo.getResourceMethod().getName());
-            Authentication authentication = Authentications.getAuthentication(resourceInfo);
-            if (authentication != null) {
-                LOGGER.debug("We found an authentication annotation: " + authentication);
+            if (policy == AuthenticationPolicy.NONE) {
+                LOGGER.debug("Policy is NONE; skipping authentication");
+                return;
             }
-            AuthenticationConfiguration.Zone zone = Zones.getZone(requestContext.getUriInfo().getPath(), configuration);
-            if (zone != null) {
-                LOGGER.debug(String.format("Zone matched: '%s' for: %s", zone.getName(), requestContext.getUriInfo().getPath()));
+            if (policy != AuthenticationPolicy.REQUIRED && policy != AuthenticationPolicy.OPTIONAL) {
+                LOGGER.error("Unknown policy: " + policy);
+                throw new IllegalStateException();
             }
-            AuthenticationPolicy policy = determinePolicy(authentication, zone);
-            String authenticatorName = determineAuthenticatorName(authentication, zone);
-            if (requestContext.getProperty("handshakeState") == null) {
-                requestContext.setProperty("handshakeState", new HandshakeState(requestContext.getUriInfo().getRequestUri()));
-            }
-            setAuthenticatorExecutorStack(requestContext, authenticatorName);
-            switch (policy) {
-                case NONE:
-                    handleNonePolicy(requestContext);
-                    break;
-                case OPTIONAL:
-                    handleOptionalPolicy(requestContext);
-                    break;
-                case REQUIRED:
-                    handleRequiredPolicy(requestContext);
-                    break;
-                default:
-                    String message = "Aborting request because we have invalid authentication policy!";
-                    LOGGER.error(message);
-                    throw new IllegalStateException(message);
+            Response response = getCurrentExecutor(requestContext).authenticate(requestContext);
+            if (response != null) {
+                requestContext.setProperty("performHandshake", true);
+                requestContext.setProperty("aborted", true);
+                requestContext.abortWith(response);
+            } else {
+                boolean authenticated = AuthenticationContext.isAuthenticated();
+                LOGGER.debug("Handshake completed");
+                LOGGER.debug("Policy is " + policy + ", we are " + (!authenticated ? "NOT " : "") + "authenticated");
+                if (policy == AuthenticationPolicy.REQUIRED && !authenticated) {
+                    LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request");
+                    requestContext.setProperty("aborted", true);
+                    requestContext.abortWith(UNAUTHORIZED);
+                }
             }
         } catch (IllegalStateException | IllegalArgumentException | AuthenticationException cause) {
             requestContext.setProperty("aborted", true);
@@ -174,13 +192,25 @@ public final class ZoneHandler {
                 Object entity = responseContext.getEntity();
                 Response response;
                 if (entity == null) {
-                    response = getExecutor(requestContext).getOnFailure().authenticate(requestContext);
+                    response = getCurrentExecutor(requestContext).getOnFailure().authenticate(requestContext);
                 } else if (entity instanceof AuthenticationContext) {
                     AuthenticationContext authenticationContext = (AuthenticationContext) entity;
-                    response = getExecutor(requestContext).getParentExecutor().onFailureCompleted(requestContext, authenticationContext);
+                    response = getCurrentExecutor(requestContext).getParentExecutor().onFailureCompleted(requestContext, authenticationContext);
                 } else {
                     LOGGER.error("Invalid return type from @Authenticate resource: " + entity.getClass());
                     response = Response.serverError().build();
+                }
+                if (response == null) {
+                    HandshakeState state = getHandshakeState(requestContext);
+                    if (!handshakeStateHandler.isHandshakePath(state.getUri())) {
+                        LOGGER.debug("Sending redirect to service...");
+                        response = Response.temporaryRedirect(state.getUri()).build();
+                    } else {
+                        LOGGER.debug("Sending no content...");
+                        response = Response.noContent().build();
+                    }
+                } else {
+                    LOGGER.debug("Sending authenticator response...");
                 }
                 requestContext.setProperty("aborted", true);
                 requestContext.abortWith(response);
@@ -192,110 +222,38 @@ public final class ZoneHandler {
     }
 
     private void postServiceCall(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-        if (Boolean.TRUE.equals(requestContext.getProperty("aborted"))) {
-            if (Boolean.TRUE.equals(requestContext.getProperty("performHandshake"))) {
+        if (isTrue(requestContext, "aborted")) {
+            if (isTrue(requestContext, "performHandshake")) {
                 LOGGER.debug("Sending handshake response for: " + requestContext.getUriInfo().getRequestUri());
+                if (responseContext.getStatusInfo().getFamily() == Response.Status.Family.REDIRECTION) {
+                    LOGGER.debug("Redirecting to: " + responseContext.getHeaderString("Location"));
+                }
             } else {
                 LOGGER.debug("Aborting request with " + responseContext.getStatus() + " for: " + requestContext.getUriInfo().getRequestUri());
             }
         } else {
-            JaxrsRequestAuthenticatorExecutor rootExecutor = (JaxrsRequestAuthenticatorExecutor) requestContext.getProperty("authenticatorStack");
-            if (rootExecutor != null) {
-                rootExecutor.onServiceCompleted(requestContext, responseContext);
-            }
+            getRootExecutor(requestContext).onServiceCompleted(requestContext, responseContext);
             LOGGER.debug("Processing finished for: " + requestContext.getUriInfo().getRequestUri());
         }
     }
 
-    private AuthenticationPolicy determinePolicy(Authentication authentication, AuthenticationConfiguration.Zone zone) {
-        return authentication != null
-                ? authentication.value()
-                : zone != null
-                ? zone.getPolicy()
-                : AuthenticationPolicy.OPTIONAL;
+    private static void setTrue(ContainerRequestContext requestContext, String propertyName) {
+        requestContext.setProperty(propertyName, Boolean.TRUE);
     }
 
-    private boolean hasHandshakePath(ContainerRequestContext requestContext) {
-        List<PathSegment> segments = requestContext.getUriInfo().getPathSegments();
-        return segments.size() > 0 && segments.get(0).getPath().equals(handshakeStateHandler.getPath().replace("/", ""));
+    private static boolean isTrue(ContainerRequestContext requestContext, String propertyName) {
+        return Boolean.TRUE.equals(requestContext.getProperty(propertyName));
     }
 
-    private String determineAuthenticatorName(Authentication authentication, AuthenticationConfiguration.Zone zone) {
-        return authentication != null && !authentication.authenticator().isEmpty()
-                ? authentication.authenticator()
-                : zone != null && zone.getAuthenticator() != null
-                ? zone.getAuthenticator().getName()
-                : "default";
+    private static void setHandshakeState(ContainerRequestContext requestContext, HandshakeState state) {
+        requestContext.setProperty("handshakeState", state == null ? new HandshakeState(requestContext.getUriInfo().getRequestUri()) : state);
     }
 
-    private void handleNonePolicy(ContainerRequestContext requestContext) {
-        LOGGER.debug("Policy is NONE; skipping authentication");
-    }
-
-    private void handleOptionalPolicy(ContainerRequestContext requestContext) throws AuthenticationException {
-        Response response = getExecutor(requestContext).authenticate(requestContext);
-        if (response != null) {
-            requestContext.setProperty("performHandshake", true);
-            requestContext.setProperty("aborted", true);
-            requestContext.abortWith(response);
-        } else {
-            LOGGER.debug("Handshake completed");
-            LOGGER.debug("Policy is OPTIONAL, we are " + (!AuthenticationContext.isAuthenticated() ? "NOT " : "") + "authenticated");
-        }
-    }
-
-    private void handleRequiredPolicy(ContainerRequestContext requestContext) throws AuthenticationException {
-        Response response = getExecutor(requestContext).authenticate(requestContext);
-        if (response != null) {
-            requestContext.setProperty("performHandshake", true);
-            requestContext.setProperty("aborted", true);
-            requestContext.abortWith(response);
-        } else {
-            if (AuthenticationContext.isAuthenticated()) {
-                LOGGER.debug("Handshake completed");
-                LOGGER.debug("Policy is REQUIRED, we are authenticated");
-            } else {
-                LOGGER.warn("Policy is REQUIRED, we are NOT authenticated; aborting request");
-                requestContext.setProperty("aborted", true);
-                requestContext.abortWith(UNAUTHORIZED);
-            }
-        }
-    }
-
-    private void setAuthenticatorExecutorStack(ContainerRequestContext requestContext, String authenticatorName) {
-        JaxrsRequestAuthenticatorExecutor root = new RootRequestAuthenticatorExecutor(authenticationContextManager, handshakeStateHandler);
-        JaxrsRequestAuthenticatorExecutor current = root;
-        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = new HashMap<>();
-        while (authenticatorName != null) {
-            current.setOnFailure(authenticatorName, AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
-            current = current.getOnFailure();
-            executorIndex.put(authenticatorName, current);
-            authenticatorName = configuration.getAuthenticators().get(authenticatorName).getOnFailure();
-        }
-        requestContext.setProperty("authenticatorStack", root);
-        requestContext.setProperty("executorIndex", executorIndex);
-    }
-
-    private JaxrsRequestAuthenticatorExecutor getExecutor(ContainerRequestContext requestContext) {
-        JaxrsRequestAuthenticatorExecutor executor;
+    private static HandshakeState getHandshakeState(ContainerRequestContext requestContext) {
         HandshakeState state = (HandshakeState) requestContext.getProperty("handshakeState");
-        Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = Types.cast(requestContext.getProperty("executorIndex"));
-        if (executorIndex.isEmpty()) {
-            if (!state.getAuthenticatorNames().isEmpty()) {
-                throw new IllegalArgumentException("Invalid amount of authenticator names found!");
-            }
-            executor = ((JaxrsRequestAuthenticatorExecutor) requestContext.getProperty("authenticatorStack"));
-        } else {
-            if (state.getAuthenticatorNames().isEmpty()) {
-                executor = ((JaxrsRequestAuthenticatorExecutor) requestContext.getProperty("authenticatorStack"));
-            } else {
-                executor = executorIndex.get(state.getAuthenticatorNames().get(state.getAuthenticatorNames().size() - 1));
-            }
-            if (executor == null) {
-                throw new IllegalArgumentException("Invalid authenticator name in authentication handshake!");
-            }
+        if (state == null) {
+            throw new IllegalStateException("No handshake state set!");
         }
-        System.out.println("getting: " + executor.getAuthenticatorName());
-        return executor;
+        return state;
     }
 }

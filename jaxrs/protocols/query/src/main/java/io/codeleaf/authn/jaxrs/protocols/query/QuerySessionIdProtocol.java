@@ -19,6 +19,9 @@ public final class QuerySessionIdProtocol implements JaxrsSessionIdProtocol {
     public void setSessionId(ContainerRequestContext requestContext, Response.ResponseBuilder response, String sessionId) {
         MultivaluedMap<String, Object> headers = response.build().getHeaders();
         Object headerValue = headers.getFirst("Location");
+        if (headerValue == null && response.build().getStatusInfo().getFamily() != Response.Status.Family.REDIRECTION) {
+            return;
+        }
         String header = headerValue == null ? null : headerValue.toString();
         if (header != null) {
             header = header

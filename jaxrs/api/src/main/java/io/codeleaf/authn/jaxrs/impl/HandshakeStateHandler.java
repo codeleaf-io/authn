@@ -1,11 +1,13 @@
 package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.jaxrs.HandshakeConfiguration;
-import io.codeleaf.common.utils.Types;
 
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
-import java.util.Map;
+import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.util.List;
 import java.util.Objects;
 
 public final class HandshakeStateHandler {
@@ -53,5 +55,15 @@ public final class HandshakeStateHandler {
             response = null;
         }
         return response;
+    }
+
+    public boolean isHandshakePath(URI uri) {
+        String[] segments = uri.toString().split("/");
+        return segments.length > 0 && Objects.equals(segments[0], getPath().replace("/", ""));
+    }
+
+    public boolean isHandshakePath(UriInfo uriInfo) {
+        List<PathSegment> segments = uriInfo.getPathSegments();
+        return segments.size() > 0 && segments.get(0).getPath().equals(getPath().replace("/", ""));
     }
 }
