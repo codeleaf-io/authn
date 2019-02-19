@@ -2,8 +2,6 @@ package io.codeleaf.authn.jaxrs.form;
 
 import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
-import io.codeleaf.authn.jaxrs.Authentication;
-import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.impl.HandshakeSession;
 import io.codeleaf.authn.jaxrs.impl.HtmlUtil;
 import io.codeleaf.authn.jaxrs.impl.JaxrsRequestAuthenticatorExecutor;
@@ -50,17 +48,6 @@ public final class FormAuthenticator implements JaxrsRequestAuthenticator, Hands
         return formUrl;
     }
 
-    private URI getLandingPageUri() {
-        URI landingPageUri;
-        JaxrsRequestAuthenticatorExecutor executor = session.getExecutor();
-        if (configuration.getCustomLandingPageUri() == null) {
-            landingPageUri = URI.create(executor.getAuthenticatorUri().toString() + "/loggedIn");
-        } else {
-            landingPageUri = configuration.getCustomLandingPageUri();
-        }
-        return landingPageUri;
-    }
-
     @Override
     public String getAuthenticationScheme() {
         return "FORM";
@@ -80,14 +67,6 @@ public final class FormAuthenticator implements JaxrsRequestAuthenticator, Hands
         return this;
     }
 
-    @Authentication(AuthenticationPolicy.REQUIRED)
-    @GET
-    @Path("/loggedIn")
-    @Produces(MediaType.TEXT_HTML)
-    public String getLandingPage() {
-        return "<html><body><h1>You are logged in!</h1></body></html>\n";
-    }
-
     @GET
     @Path("/login")
     @Produces(MediaType.TEXT_HTML)
@@ -99,8 +78,8 @@ public final class FormAuthenticator implements JaxrsRequestAuthenticator, Hands
                 + "<form method=\"POST\" action=\"" + HtmlUtil.htmlEncode(getFormUri().toString()) + "\">\n"
                 + "Username <input type=\"text\" name=\"" + HtmlUtil.htmlEncode(configuration.getUsernameField()) + "\"><br/>\n"
                 + "Password <input type=\"password\" name=\"" + HtmlUtil.htmlEncode(configuration.getPasswordField()) + "\"><br/>\n"
-                + "<input type=\"text\" name=\"landingPage\" value=\"" + HtmlUtil.htmlEncode(landingPage) + "\">\n"
-                + "<input type=\"text\" name=\"authenticators\" value=\"" + HtmlUtil.htmlEncode(authenticators) + "\">\n"
+                + "<input type=\"hidden\" name=\"landingPage\" value=\"" + HtmlUtil.htmlEncode(landingPage) + "\">\n"
+                + "<input type=\"hidden\" name=\"authenticators\" value=\"" + HtmlUtil.htmlEncode(authenticators) + "\">\n"
                 + "<input type=\"submit\" value=\"Log In\"><br/>\n"
                 + "</form></body></html>\n";
     }
