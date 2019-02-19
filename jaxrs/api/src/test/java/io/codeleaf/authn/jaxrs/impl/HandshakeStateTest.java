@@ -1,5 +1,6 @@
 package io.codeleaf.authn.jaxrs.impl;
 
+import io.codeleaf.authn.jaxrs.spi.HandshakeState;
 import org.junit.Assert;
 import org.junit.Test;
 

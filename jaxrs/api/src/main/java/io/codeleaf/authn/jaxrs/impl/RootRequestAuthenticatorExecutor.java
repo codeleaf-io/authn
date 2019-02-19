@@ -28,7 +28,9 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
         Response response = getHandshakeStateHandler().clearHandshakeState(requestContext);
         if (response == null) {
             authenticationContextManager.setAuthenticationContext(authenticationContext);
-            requestContext.setSecurityContext(createSecurityContext(authenticationContext, getOnFailure().getAuthenticator()));
+            if (!ZoneHandler.isTrue(requestContext, "@Authenticate")) {
+                requestContext.setSecurityContext(createSecurityContext(authenticationContext, getOnFailure().getAuthenticator()));
+            }
         }
         return response;
     }

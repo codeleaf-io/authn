@@ -22,6 +22,7 @@ public final class FormConfigurationFactory extends AbstractConfigurationFactory
             return new FormConfiguration(
                     getAuthenticator(specification),
                     getCustomLoginFormUri(specification),
+                    getCustomLandingPageUri(specification),
                     getUsernameField(specification),
                     getPasswordField(specification));
         } catch (IllegalArgumentException cause) {
@@ -41,6 +42,12 @@ public final class FormConfigurationFactory extends AbstractConfigurationFactory
     private URI getCustomLoginFormUri(Specification specification) throws SettingNotFoundException {
         return specification.hasSetting("loginUri")
                 ? URI.create(Specifications.parseString(specification, "loginUri"))
+                : null;
+    }
+
+    private URI getCustomLandingPageUri(Specification specification) throws SettingNotFoundException {
+        return specification.hasSetting("landingPage")
+                ? URI.create(Specifications.parseString(specification, "landingPage"))
                 : null;
     }
 

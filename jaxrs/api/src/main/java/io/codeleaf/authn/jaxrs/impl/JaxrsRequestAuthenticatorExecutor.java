@@ -2,6 +2,7 @@ package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
+import io.codeleaf.authn.jaxrs.spi.HandshakeState;
 import io.codeleaf.authn.jaxrs.spi.JaxrsRequestAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,11 +14,6 @@ import java.net.URI;
 import java.util.List;
 
 public class JaxrsRequestAuthenticatorExecutor {
-
-    public interface ExecutorAware {
-
-        void init(JaxrsRequestAuthenticatorExecutor executor);
-    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JaxrsRequestAuthenticatorExecutor.class);
 
@@ -61,6 +57,7 @@ public class JaxrsRequestAuthenticatorExecutor {
         List<String> authenticatorNames = state.getAuthenticatorNames();
         authenticatorNames.add(authenticatorName);
         LOGGER.debug("Calling authenticate() on " + authenticator.getClass().getCanonicalName() + "...");
+        HandshakeSessionManager.get().setExecutor(this);
         authenticationContext = authenticator.authenticate(requestContext);
         if (authenticationContext != null) {
             LOGGER.debug("Proceeding to parent: " + parent.authenticator.getClass().getCanonicalName() + "...");
@@ -84,6 +81,7 @@ public class JaxrsRequestAuthenticatorExecutor {
     public Response onFailureCompleted(ContainerRequestContext requestContext, AuthenticationContext authenticationContext) {
         Response response;
         LOGGER.debug("Calling onFailureCompleted() on " + authenticator.getClass().getCanonicalName() + "...");
+        HandshakeSessionManager.get().setExecutor(this);
         Response.ResponseBuilder responseBuilder = authenticator.onFailureCompleted(requestContext, authenticationContext);
         if (responseBuilder != null) {
             response = buildResponse(requestContext, responseBuilder);
@@ -99,14 +97,12 @@ public class JaxrsRequestAuthenticatorExecutor {
 
     public void onServiceCompleted(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
         LOGGER.debug("Calling onServiceCompleted() on " + authenticator.getClass().getCanonicalName() + "...");
+        HandshakeSessionManager.get().setExecutor(this);
         authenticator.onServiceCompleted(containerRequestContext, containerResponseContext, authenticationContext);
     }
 
     public void setOnFailure(String authenticatorName, JaxrsRequestAuthenticator authenticator) {
         onFailure = new JaxrsRequestAuthenticatorExecutor(authenticatorName, authenticator, handshakeStateHandler, this);
-        if (authenticator instanceof ExecutorAware) {
-            ((ExecutorAware) authenticator).init(onFailure);
-        }
     }
 
     public JaxrsRequestAuthenticator getParent() {

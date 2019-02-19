@@ -197,6 +197,10 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
             }
             if (instance == null) {
                 throw new IllegalStateException("Null returned during instantiation for: " + authenticator.getName());
+            } else {
+                if (instance instanceof HandshakeSession.SessionAware) {
+                    ((HandshakeSession.SessionAware) instance).init(HandshakeSessionManager.get());
+                }
             }
             AuthenticatorRegistry.register(authenticator.getName(), instance);
         } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException | InstantiationException cause) {
