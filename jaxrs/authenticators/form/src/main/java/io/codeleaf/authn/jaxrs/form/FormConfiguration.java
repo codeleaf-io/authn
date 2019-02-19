@@ -9,14 +9,12 @@ public final class FormConfiguration implements Configuration {
 
     private final PasswordRequestAuthenticator authenticator;
     private final URI customLoginFormUri;
-    private final URI customLandingPageUri;
     private final String usernameField;
     private final String passwordField;
 
-    FormConfiguration(PasswordRequestAuthenticator authenticator, URI customLoginFormUri, URI customLandingPageUri, String usernameField, String passwordField) {
+    FormConfiguration(PasswordRequestAuthenticator authenticator, URI customLoginFormUri, String usernameField, String passwordField) {
         this.authenticator = authenticator;
         this.customLoginFormUri = customLoginFormUri;
-        this.customLandingPageUri = customLandingPageUri;
         this.usernameField = usernameField;
         this.passwordField = passwordField;
     }
@@ -27,10 +25,6 @@ public final class FormConfiguration implements Configuration {
 
     public URI getCustomLoginFormUri() {
         return customLoginFormUri;
-    }
-
-    public URI getCustomLandingPageUri() {
-        return customLandingPageUri;
     }
 
     public String getUsernameField() {
