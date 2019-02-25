@@ -34,7 +34,7 @@ public final class FormAuthenticator implements JaxrsRequestAuthenticator, Hands
     }
 
     private URI getLoginUri() {
-        return URI.create(session.getExecutor().getAuthenticatorUri().toString() + "/login");
+        return URI.create("/"+configuration.getContextField()+session.getExecutor().getAuthenticatorUri().toString() + "/login");
     }
 
     private URI getFormUri() {
