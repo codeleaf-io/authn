@@ -23,7 +23,8 @@ public final class FormConfigurationFactory extends AbstractConfigurationFactory
                     getAuthenticator(specification),
                     getCustomLoginFormUri(specification),
                     getUsernameField(specification),
-                    getPasswordField(specification));
+                    getPasswordField(specification),
+                    getContentField(specification));
         } catch (IllegalArgumentException cause) {
             throw new InvalidSpecificationException(specification, "Can't parse specification: " + cause.getMessage(), cause);
         }
@@ -54,5 +55,11 @@ public final class FormConfigurationFactory extends AbstractConfigurationFactory
         return specification.hasSetting("passwordField")
                 ? Specifications.parseString(specification, "passwordField")
                 : "password";
+    }
+
+    private String getContentField(Specification specification) throws SettingNotFoundException {
+        return specification.hasSetting("contextField")
+                ? Specifications.parseString(specification, "contextField")
+                : "context";
     }
 }
