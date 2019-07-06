@@ -22,7 +22,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>authn-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.ws.rs</groupId>

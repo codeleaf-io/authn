@@ -22,22 +22,18 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>authn-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>authn-jaxrs-spi</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.codeleaf.authn</groupId>
             <artifactId>authn-jaxrs-protocol-query</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.codeleaf.authn</groupId>
             <artifactId>authn-stores-client</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.ws.rs</groupId>

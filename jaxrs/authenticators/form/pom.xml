@@ -6,6 +6,7 @@
         <groupId>io.codeleaf.authn</groupId>
         <artifactId>authn</artifactId>
         <version>0.1.0</version>
+        <relativePath>../../..</relativePath>
     </parent>
 
     <artifactId>authn-jaxrs-authenticator-form</artifactId>
@@ -17,12 +18,10 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>authn-jaxrs-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>authn-password-spi</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.codeleaf.config</groupId>
