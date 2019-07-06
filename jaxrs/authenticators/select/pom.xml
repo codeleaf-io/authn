@@ -1,0 +1,38 @@
+<project>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.codeleaf.authn</groupId>
+        <artifactId>authn</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../../..</relativePath>
+    </parent>
+
+    <artifactId>authn-jaxrs-authenticator-select</artifactId>
+
+    <name>Authn :: Jaxrs :: Authenticator :: Select</name>
+    <description>Jaxrs basic authentication extensions</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>authn-jaxrs-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>authn-password-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.codeleaf.config</groupId>
+            <artifactId>config-api</artifactId>
+            <version>${leaf-config.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.codeleaf.logging</groupId>
+            <artifactId>logging-slf4j</artifactId>
+            <version>${leaf-logging.version}</version>
+        </dependency>
+    </dependencies>
+
+</project>

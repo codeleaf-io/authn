@@ -18,7 +18,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>authn-password-spi</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.codeleaf.config</groupId>
@@ -26,9 +25,9 @@
             <version>${leaf-config.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+            <groupId>io.codeleaf.logging</groupId>
+            <artifactId>logging-slf4j</artifactId>
+            <version>${leaf-logging.version}</version>
         </dependency>
     </dependencies>
 

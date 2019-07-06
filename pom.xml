@@ -19,7 +19,16 @@
         <module>api</module>
         <module>jaxrs/api</module>
         <module>jaxrs/spi</module>
-        <module>jaxrs/basic</module>
+        <module>jaxrs/authenticators/basic</module>
+        <module>jaxrs/authenticators/form</module>
+        <module>jaxrs/authenticators/jwt</module>
+        <module>jaxrs/authenticators/oauth</module>
+        <module>jaxrs/authenticators/select</module>
+        <module>jaxrs/protocols/cookie</module>
+        <module>jaxrs/protocols/header</module>
+        <module>jaxrs/protocols/query</module>
+        <module>stores/client</module>
+        <module>stores/local</module>
         <module>password/spi</module>
         <module>password/dummy</module>
     </modules>
@@ -37,5 +46,85 @@
             <organizationUrl>http://www.tvburger.net/</organizationUrl>
         </developer>
     </developers>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-authenticator-basic</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-authenticator-form</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-authenticator-jwt</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-authenticator-oauth</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-authenticator-select</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-protocol-cookie</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-protocol-header</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-jaxrs-protocol-query</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-stores-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-stores-local</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-password-dummy</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>authn-password-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 </project>

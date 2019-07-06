@@ -1,6 +1,8 @@
 package io.codeleaf.authn.jaxrs;
 
 import io.codeleaf.config.Configuration;
+import io.codeleaf.config.ConfigurationNotFoundException;
+import io.codeleaf.config.spec.InvalidSpecificationException;
 
 import java.util.*;
 
@@ -8,10 +10,12 @@ public final class AuthenticationConfiguration implements Configuration {
 
     private final List<Zone> zones;
     private final Map<String, Authenticator> authenticators;
+    private final HandshakeConfiguration handshake;
 
-    private AuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators) {
+    private AuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators, HandshakeConfiguration handshake) {
         this.zones = zones;
         this.authenticators = authenticators;
+        this.handshake = handshake;
     }
 
     public List<Zone> getZones() {
@@ -22,18 +26,17 @@ public final class AuthenticationConfiguration implements Configuration {
         return authenticators;
     }
 
-    public static AuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators) {
+    public static AuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators, HandshakeConfiguration handshake) throws InvalidSpecificationException, ConfigurationNotFoundException {
         Objects.requireNonNull(zones);
         Objects.requireNonNull(authenticators);
         return new AuthenticationConfiguration(
                 Collections.unmodifiableList(new ArrayList<>(zones)),
-                Collections.unmodifiableMap(new LinkedHashMap<>(authenticators)));
+                Collections.unmodifiableMap(new LinkedHashMap<>(authenticators)),
+                handshake);
     }
 
-    private static final AuthenticationConfiguration DEFAULT = create(Collections.emptyList(), Collections.emptyMap());
-
-    public static final AuthenticationConfiguration getDefault() {
-        return DEFAULT;
+    public HandshakeConfiguration getHandshake() {
+        return handshake;
     }
 
     public static final class Zone {
@@ -71,11 +74,13 @@ public final class AuthenticationConfiguration implements Configuration {
 
         private final String name;
         private final Class<?> implementationClass;
+        private final String onFailure;
         private final Configuration configuration;
 
-        public Authenticator(String name, Class<?> implementationClass, Configuration configuration) {
+        public Authenticator(String name, Class<?> implementationClass, String onFailure, Configuration configuration) {
             this.name = name;
             this.implementationClass = implementationClass;
+            this.onFailure = onFailure;
             this.configuration = configuration;
         }
 
@@ -85,6 +90,10 @@ public final class AuthenticationConfiguration implements Configuration {
 
         public Class<?> getImplementationClass() {
             return implementationClass;
+        }
+
+        public String getOnFailure() {
+            return onFailure;
         }
 
         public Configuration getConfiguration() {

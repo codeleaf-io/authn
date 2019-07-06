@@ -1,9 +1,12 @@
 package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
-import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
+import io.codeleaf.authn.jaxrs.AuthenticationPolicy;
+import io.codeleaf.authn.jaxrs.HandshakeConfiguration;
+import io.codeleaf.common.utils.Types;
 import io.codeleaf.config.Configuration;
+import io.codeleaf.config.ConfigurationException;
 import io.codeleaf.config.ConfigurationNotFoundException;
 import io.codeleaf.config.ConfigurationProvider;
 import io.codeleaf.config.impl.AbstractConfigurationFactory;
@@ -12,40 +15,72 @@ import io.codeleaf.config.spec.InvalidSpecificationException;
 import io.codeleaf.config.spec.SettingNotFoundException;
 import io.codeleaf.config.spec.Specification;
 import io.codeleaf.config.spec.impl.MapSpecification;
+import io.codeleaf.config.util.Specifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public final class AuthenticationConfigurationFactory extends AbstractConfigurationFactory<AuthenticationConfiguration> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationConfigurationFactory.class);
 
+    //TODO: Fix by passing correct specification
+    private static final AuthenticationConfiguration DEFAULT;
+
+    static {
+        try {
+            DEFAULT = AuthenticationConfiguration.create(
+                    Collections.emptyList(),
+                    Collections.emptyMap(),
+                    ConfigurationProvider.get().getConfiguration(HandshakeConfiguration.class));
+        } catch (ConfigurationException | IOException cause) {
+            throw new ExceptionInInitializerError(cause);
+        }
+    }
+
     public AuthenticationConfigurationFactory() {
-        super(AuthenticationConfiguration.getDefault());
+        super(DEFAULT);
     }
 
     @Override
-    protected AuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
-        Map<String, AuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
-        for (String authenticatorName : specification.getChilds("authenticators")) {
-            authenticators.put(authenticatorName, parseAuthenticator(authenticatorName, specification));
+    public AuthenticationConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+        try {
+            System.out.println(specification.getChilds("authenticators"));
+            Map<String, AuthenticationConfiguration.Authenticator> authenticators = new LinkedHashMap<>();
+            for (String authenticatorName : specification.getChilds("authenticators")) {
+                authenticators.put(authenticatorName, parseAuthenticator(authenticatorName, specification));
+            }
+            List<AuthenticationConfiguration.Zone> zones = new ArrayList<>();
+            for (String zoneName : specification.getChilds("zones")) {
+                zones.add(parseZone(zoneName, specification, authenticators));
+            }
+            Specification handshakeSpecification = MapSpecification.create(specification, "handshake");
+            HandshakeConfiguration handshake = ConfigurationProvider.get().parseConfiguration(HandshakeConfiguration.class, handshakeSpecification);
+            return AuthenticationConfiguration.create(zones, authenticators, handshake);
+        } catch (ConfigurationNotFoundException cause) {
+            throw new InvalidSpecificationException(specification, cause);
         }
-        List<AuthenticationConfiguration.Zone> zones = new ArrayList<>();
-        for (String zoneName : specification.getChilds("zones")) {
-            zones.add(parseZone(zoneName, specification, authenticators));
-        }
-        return AuthenticationConfiguration.create(zones, authenticators);
     }
 
     private AuthenticationConfiguration.Zone parseZone(String zoneName, Specification specification, Map<String, AuthenticationConfiguration.Authenticator> authenticators) throws SettingNotFoundException, InvalidSettingException {
-        return new AuthenticationConfiguration.Zone(
-                zoneName,
-                parsePolicy(specification, specification.getSetting("zones", zoneName, "policy")),
-                parseEndpoints(specification, specification.getSetting("zones", zoneName, "endpoints")),
-                parseAuthenticator(specification, specification.getSetting("zones", zoneName, "authenticator"), authenticators));
+        LOGGER.debug("Parsing zone: " + zoneName + "...");
+        AuthenticationPolicy policy = parsePolicy(specification, specification.getSetting("zones", zoneName, "policy"));
+        AuthenticationConfiguration.Authenticator authenticator;
+        if (specification.hasSetting("zones", zoneName, "authenticator")) {
+            authenticator = parseAuthenticator(specification, specification.getSetting("zones", zoneName, "authenticator"), authenticators);
+        } else if (policy == AuthenticationPolicy.NONE) {
+            authenticator = null;
+        } else {
+            throw new SettingNotFoundException(specification, Arrays.asList("zones", zoneName, "authenticator"));
+        }
+        List<String> endpoints = parseEndpoints(specification, specification.getSetting("zones", zoneName, "endpoints"));
+        return new AuthenticationConfiguration.Zone(zoneName, policy, endpoints, authenticator);
     }
 
     private AuthenticationPolicy parsePolicy(Specification specification, Specification.Setting setting) throws InvalidSettingException {
@@ -64,7 +99,7 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
                 policy = AuthenticationPolicy.REQUIRED;
                 break;
             default:
-                throw new InvalidSettingException(specification, setting, "Invalid policy value, must be: none, optional or required!");
+                throw new InvalidSettingException(specification, setting, "Invalid policy value, must be: none, optional, redirect or required!");
         }
         return policy;
     }
@@ -100,9 +135,17 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
     }
 
     private AuthenticationConfiguration.Authenticator parseAuthenticator(String authenticatorName, Specification specification) throws InvalidSpecificationException {
+        LOGGER.debug("Parsing authenticator: " + authenticatorName + "...");
+        String onFailure;
+        if (specification.hasSetting("authenticators", authenticatorName, "onFailure")) {
+            onFailure = Specifications.parseString(specification, "authenticators", authenticatorName, "onFailure");
+        } else {
+            onFailure = null;
+        }
         AuthenticationConfiguration.Authenticator authenticator = new AuthenticationConfiguration.Authenticator(
                 authenticatorName,
                 parseClass(specification, specification.getSetting("authenticators", authenticatorName, "implementation")),
+                onFailure,
                 parseAuthenticationConfiguration(authenticatorName, specification));
         initializeAuthenticator(specification, authenticator);
         return authenticator;
@@ -119,7 +162,6 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         }
     }
 
-    @SuppressWarnings("unchecked")
     private Configuration parseAuthenticationConfiguration(String authenticatorName, Specification specification) throws InvalidSpecificationException {
         Specification.Setting configTypeSetting = specification.getSetting("authenticators", authenticatorName, "configuration", "type");
         Class<?> configurationClass = parseClass(specification, configTypeSetting);
@@ -128,22 +170,67 @@ public final class AuthenticationConfigurationFactory extends AbstractConfigurat
         }
         try {
             Specification configSpecification = MapSpecification.create(specification, "authenticators", authenticatorName, "configuration", "settings");
-            return ConfigurationProvider.get().parseConfiguration((Class<? extends Configuration>) configurationClass, configSpecification);
+            return ConfigurationProvider.get().parseConfiguration(Types.cast(configurationClass), configSpecification);
         } catch (ConfigurationNotFoundException cause) {
             throw new InvalidSettingException(specification, specification.getSetting("authenticators", authenticatorName, "configuration", "settings"), cause.getCause());
         }
     }
 
+    /*
+     * First looks at a static create(configuration),
+     * if not found, for a constructor(configuration),
+     * otherwise error.
+     */
     private void initializeAuthenticator(Specification specification, AuthenticationConfiguration.Authenticator authenticator) throws InvalidSpecificationException {
         try {
             LOGGER.debug("Initializing authenticator: " + authenticator.getName());
             Class<? extends Configuration> configClass = authenticator.getConfiguration().getClass();
-            Method method = authenticator.getImplementationClass().getMethod("create", configClass);
-            Object instance = method.invoke(null, authenticator.getConfiguration());
+            Method method = getMethod(authenticator, configClass);
+            Object instance = null;
+            if (method != null) {
+                instance = method.invoke(null, authenticator.getConfiguration());
+            } else {
+                Constructor<?> constructor = getConstructor(authenticator);
+                if (constructor != null) {
+                    instance = constructor.newInstance(authenticator.getConfiguration());
+                }
+            }
+            if (instance == null) {
+                throw new IllegalStateException("Null returned during instantiation for: " + authenticator.getName());
+            } else {
+                if (instance instanceof HandshakeSession.SessionAware) {
+                    ((HandshakeSession.SessionAware) instance).init(HandshakeSessionManager.get());
+                }
+            }
             AuthenticatorRegistry.register(authenticator.getName(), instance);
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException cause) {
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalStateException | InvocationTargetException | InstantiationException cause) {
             LOGGER.error("Failed to initialize authenticator: " + cause.getMessage());
             throw new InvalidSpecificationException(specification, cause.getMessage(), cause);
         }
+    }
+
+    private Method getMethod(AuthenticationConfiguration.Authenticator authenticator, Class<? extends Configuration> configClass) throws NoSuchMethodException {
+        for (Method method : authenticator.getImplementationClass().getMethods()) {
+            if (method.getName().equals("create")) {
+                for (Type type : method.getParameterTypes()) {
+                    if (type.equals(configClass)) {
+                        return authenticator.getImplementationClass().getMethod("create", configClass);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Constructor<?> getConstructor(AuthenticationConfiguration.Authenticator authenticator) {
+        for (Constructor<?> constructor : authenticator.getImplementationClass().getConstructors()) {
+            Type[] parameterTypes = constructor.getGenericParameterTypes();
+            for (Type type : parameterTypes) {
+                if (type.equals(authenticator.getConfiguration().getClass())) {
+                    return constructor;
+                }
+            }
+        }
+        return null;
     }
 }
