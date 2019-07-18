@@ -15,15 +15,15 @@ public final class AuthenticationFilterFactory {
     private AuthenticationFilterFactory() {
     }
 
-    public static Set<Object> create() {
-        try {
-            AuthenticationConfiguration configuration = ConfigurationProvider.get().getConfiguration(AuthenticationConfiguration.class);
-            return new ZoneHandler(
-                    (ThreadLocalAuthenticationContextManager) AuthenticationContext.Holder.get(),
-                    configuration,
-                    new HandshakeStateHandler(configuration.getHandshake())).getFilters();
-        } catch (ConfigurationException | IOException cause) {
-            throw new ExceptionInInitializerError(cause);
-        }
+    public static Set<Object> create() throws ConfigurationException, IOException {
+        return create(ConfigurationProvider.get().getConfiguration(AuthenticationConfiguration.class));
     }
+
+    public static Set<Object> create(AuthenticationConfiguration configuration) {
+        return new ZoneHandler(
+                (ThreadLocalAuthenticationContextManager) AuthenticationContext.Holder.get(),
+                configuration,
+                new HandshakeStateHandler(configuration.getHandshake())).getFilters();
+    }
+
 }

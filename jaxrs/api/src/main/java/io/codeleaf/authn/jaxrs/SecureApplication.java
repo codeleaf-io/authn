@@ -1,9 +1,10 @@
 package io.codeleaf.authn.jaxrs;
 
 import io.codeleaf.authn.jaxrs.impl.AuthenticatorResources;
-import io.codeleaf.authn.jaxrs.impl.CorsFilter;
+import io.codeleaf.config.ConfigurationException;
 
 import javax.ws.rs.core.Application;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -26,10 +27,12 @@ public class SecureApplication extends Application {
     }
 
     public final Set<Object> getSingletons() {
-        Set<Object> singletons = new LinkedHashSet<>();
-        singletons.addAll(AuthenticationFilterFactory.create());
-        singletons.add(CorsFilter.create());
-        singletons.addAll(getSecureSingletons());
-        return singletons;
+        try {
+            Set<Object> singletons = new LinkedHashSet<>(AuthenticationFilterFactory.create());
+            singletons.addAll(getSecureSingletons());
+            return singletons;
+        } catch (ConfigurationException | IOException cause) {
+            throw new ExceptionInInitializerError(cause);
+        }
     }
 }

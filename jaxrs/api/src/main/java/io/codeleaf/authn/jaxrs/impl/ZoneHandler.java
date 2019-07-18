@@ -32,14 +32,16 @@ public final class ZoneHandler {
     private final AuthenticationConfiguration configuration;
     private final HandshakeStateHandler handshakeStateHandler;
 
+    private final CorsFilter corsFilter = new CorsFilter();
     private final Set<Object> filters = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
-            new PreMatchingFilter(), new PreResourceFilter(), new PostResourceFilter()
+            corsFilter, new PreMatchingFilter(), new PreResourceFilter(), new PostResourceFilter()
     )));
 
     public ZoneHandler(ThreadLocalAuthenticationContextManager authenticationContextManager, AuthenticationConfiguration configuration, HandshakeStateHandler handshakeStateHandler) {
         this.authenticationContextManager = authenticationContextManager;
         this.configuration = configuration;
         this.handshakeStateHandler = handshakeStateHandler;
+        // TODO: set allowed Origins on CorsFilter, after this is available in AuthenticationConfiguration
     }
 
     public Set<Object> getFilters() {

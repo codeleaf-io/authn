@@ -4,7 +4,9 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.container.*;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @PreMatching
@@ -122,10 +124,15 @@ public final class CorsFilter implements ContainerRequestFilter, ContainerRespon
     }
 
     public static CorsFilter create() {
+        return create(Collections.singletonList("*"));
+    }
+
+    public static CorsFilter create(List<String> allowedOrigins) {
         CorsFilter corsFilter = new CorsFilter();
-        corsFilter.getAllowedOrigins().add("*");
+        corsFilter.getAllowedOrigins().addAll(allowedOrigins);
         corsFilter.setAllowCredentials(true);
         corsFilter.setAllowedMethods("OPTIONS, GET, POST, DELETE, PUT, PATCH");
         return corsFilter;
     }
+
 }
