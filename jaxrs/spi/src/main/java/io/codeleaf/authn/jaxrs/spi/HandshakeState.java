@@ -5,6 +5,7 @@ import io.codeleaf.common.utils.StringEncoder;
 import java.net.URI;
 import java.util.*;
 
+// TODO: handshake state is not encrypted - is this a problem?
 public final class HandshakeState {
 
     private final URI uri;

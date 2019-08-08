@@ -65,6 +65,7 @@ public final class RootRequestAuthenticatorExecutor extends JaxrsRequestAuthenti
                 return authenticationContext.isSecure();
             }
 
+            // TODO: must be a static member of SecurityContext.BASIC_AUTH ... etc.
             @Override
             public String getAuthenticationScheme() {
                 return authenticator.getAuthenticationScheme();

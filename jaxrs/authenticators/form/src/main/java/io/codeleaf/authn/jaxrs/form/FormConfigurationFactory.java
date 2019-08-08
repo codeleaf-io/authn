@@ -1,8 +1,8 @@
 package io.codeleaf.authn.jaxrs.form;
 
+import io.codeleaf.authn.impl.AuthenticationRegistryAwareConfigurationFactory;
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.password.spi.PasswordRequestAuthenticator;
-import io.codeleaf.config.impl.AbstractConfigurationFactory;
 import io.codeleaf.config.spec.InvalidSpecificationException;
 import io.codeleaf.config.spec.SettingNotFoundException;
 import io.codeleaf.config.spec.Specification;
@@ -10,17 +10,17 @@ import io.codeleaf.config.util.Specifications;
 
 import java.net.URI;
 
-public final class FormConfigurationFactory extends AbstractConfigurationFactory<FormConfiguration> {
+public final class FormConfigurationFactory extends AuthenticationRegistryAwareConfigurationFactory<FormConfiguration> {
 
     public FormConfigurationFactory() {
         super(FormConfiguration.class);
     }
 
     @Override
-    public FormConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public FormConfiguration parseConfiguration(Specification specification, AuthenticatorRegistry registry) throws InvalidSpecificationException {
         try {
             return new FormConfiguration(
-                    getAuthenticator(specification),
+                    getAuthenticator(specification, registry),
                     getCustomLoginFormUri(specification),
                     getUsernameField(specification),
                     getPasswordField(specification),
@@ -30,9 +30,9 @@ public final class FormConfigurationFactory extends AbstractConfigurationFactory
         }
     }
 
-    private PasswordRequestAuthenticator getAuthenticator(Specification specification) throws InvalidSpecificationException {
+    private PasswordRequestAuthenticator getAuthenticator(Specification specification, AuthenticatorRegistry registry) throws InvalidSpecificationException {
         String authenticatorName = Specifications.parseString(specification, "passwordAuthenticator");
-        PasswordRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, PasswordRequestAuthenticator.class);
+        PasswordRequestAuthenticator authenticator = registry.lookup(authenticatorName, PasswordRequestAuthenticator.class);
         if (authenticator == null) {
             throw new InvalidSpecificationException(specification, "No authenticator found with name: " + authenticatorName);
         }

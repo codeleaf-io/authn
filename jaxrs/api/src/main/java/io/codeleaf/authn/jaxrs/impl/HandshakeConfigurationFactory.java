@@ -1,6 +1,7 @@
 package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.impl.AuthenticatorRegistry;
+import io.codeleaf.authn.impl.DefaultAuthenticatorRegistry;
 import io.codeleaf.authn.jaxrs.HandshakeConfiguration;
 import io.codeleaf.authn.jaxrs.protocols.query.QuerySessionIdConfiguration;
 import io.codeleaf.authn.jaxrs.protocols.query.QuerySessionIdProtocol;
@@ -11,13 +12,13 @@ import io.codeleaf.authn.stores.client.ClientSessionDataStore;
 import io.codeleaf.config.ConfigurationException;
 import io.codeleaf.config.ConfigurationNotFoundException;
 import io.codeleaf.config.ConfigurationProvider;
-import io.codeleaf.config.impl.AbstractConfigurationFactory;
+import io.codeleaf.config.impl.ContextAwareConfigurationFactory;
 import io.codeleaf.config.spec.*;
 import io.codeleaf.config.util.Specifications;
 
 import java.io.IOException;
 
-public final class HandshakeConfigurationFactory extends AbstractConfigurationFactory<HandshakeConfiguration> {
+public final class HandshakeConfigurationFactory extends ContextAwareConfigurationFactory<HandshakeConfiguration, AuthenticatorRegistry> {
 
     private static final HandshakeConfiguration DEFAULT;
 
@@ -30,16 +31,15 @@ public final class HandshakeConfigurationFactory extends AbstractConfigurationFa
     }
 
     public HandshakeConfigurationFactory() {
-        super(DEFAULT);
+        super(HandshakeConfiguration.class, AuthenticatorRegistry.class, DEFAULT, DefaultAuthenticatorRegistry::new);
     }
 
-    @Override
-    public HandshakeConfiguration parseConfiguration(Specification specification) throws InvalidSpecificationException {
+    public HandshakeConfiguration parseConfiguration(Specification specification, AuthenticatorRegistry registry) throws InvalidSpecificationException {
         try {
             return new HandshakeConfiguration(
                     getPath(specification),
-                    getProtocol(specification),
-                    getStore(specification));
+                    getProtocol(specification, registry),
+                    getStore(specification, registry));
         } catch (IllegalArgumentException cause) {
             throw new InvalidSpecificationException(specification, "Can't parse specification: " + cause.getMessage(), cause);
         }
@@ -51,11 +51,11 @@ public final class HandshakeConfigurationFactory extends AbstractConfigurationFa
                 : DEFAULT.getPath();
     }
 
-    private SessionDataStore getStore(Specification specification) throws InvalidSpecificationException {
+    private SessionDataStore getStore(Specification specification, AuthenticatorRegistry registry) throws InvalidSpecificationException {
         SessionDataStore sessionDataStore;
         if (specification.hasSetting("store")) {
             String store = Specifications.parseString(specification, "store");
-            sessionDataStore = AuthenticatorRegistry.lookup(store, SessionDataStore.class);
+            sessionDataStore = registry.lookup(store, SessionDataStore.class);
         } else {
             sessionDataStore = DEFAULT.getStore();
         }
@@ -66,11 +66,11 @@ public final class HandshakeConfigurationFactory extends AbstractConfigurationFa
         return ClientSessionDataStore.create(ConfigurationProvider.get().getConfiguration(ClientSessionDataConfiguration.class));
     }
 
-    private JaxrsSessionIdProtocol getProtocol(Specification specification) throws InvalidSpecificationException {
+    private JaxrsSessionIdProtocol getProtocol(Specification specification, AuthenticatorRegistry registry) throws InvalidSpecificationException {
         JaxrsSessionIdProtocol jaxrsSessionIdProtocol;
         if (specification.hasSetting("protocol")) {
             String protocol = Specifications.parseString(specification, "protocol");
-            jaxrsSessionIdProtocol = AuthenticatorRegistry.lookup(protocol, JaxrsSessionIdProtocol.class);
+            jaxrsSessionIdProtocol = registry.lookup(protocol, JaxrsSessionIdProtocol.class);
         } else {
             jaxrsSessionIdProtocol = DEFAULT.getProtocol();
         }

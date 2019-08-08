@@ -2,7 +2,6 @@ package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.AuthenticationContext;
 import io.codeleaf.authn.AuthenticationException;
-import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.authn.impl.ThreadLocalAuthenticationContextManager;
 import io.codeleaf.authn.jaxrs.Authentication;
 import io.codeleaf.authn.jaxrs.AuthenticationConfiguration;
@@ -77,10 +76,10 @@ public final class ZoneHandler {
                 LOGGER.debug("Extracted handshake state: " + (state == null ? "none" : state.getUri() + " " + state.getAuthenticatorNames()));
                 if (isTrue(requestContext, "handshakeResource")) {
                     String authenticatorName = (String) requestContext.getProperty("authenticator");
-                    if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
+                    if (!configuration.getRegistry().contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
                         throw new AuthenticationException();
                     }
-                    JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
+                    JaxrsRequestAuthenticator authenticator = configuration.getRegistry().lookup(authenticatorName, JaxrsRequestAuthenticator.class);
                     LOGGER.debug("Calling setHandshakeState() on " + authenticator.getClass().getCanonicalName());
                     state = authenticator.setHandshakeState(requestContext, resourceInfo, state);
                     if (state == null) {
@@ -145,7 +144,7 @@ public final class ZoneHandler {
         JaxrsRequestAuthenticatorExecutor current = root;
         Map<String, JaxrsRequestAuthenticatorExecutor> executorIndex = new HashMap<>();
         while (authenticatorName != null) {
-            current.setOnFailure(authenticatorName, AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class));
+            current.setOnFailure(authenticatorName, configuration.getRegistry().lookup(authenticatorName, JaxrsRequestAuthenticator.class));
             current = current.getOnFailure();
             executorIndex.put(authenticatorName, current);
             authenticatorName = configuration.getAuthenticators().get(authenticatorName).getOnFailure();

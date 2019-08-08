@@ -13,10 +13,12 @@ import java.net.URI;
 public final class SelectRequestAuthenticator implements JaxrsRequestAuthenticator {
 
     private final SelectRequestConfiguration configuration;
+    private final AuthenticatorRegistry registry;
     private static final ThreadLocal<JaxrsRequestAuthenticator> authenticators = new ThreadLocal<>();
 
-    public SelectRequestAuthenticator(SelectRequestConfiguration configuration) {
+    public SelectRequestAuthenticator(SelectRequestConfiguration configuration, AuthenticatorRegistry registry) {
         this.configuration = configuration;
+        this.registry = registry;
     }
 
     @Override
@@ -27,10 +29,10 @@ public final class SelectRequestAuthenticator implements JaxrsRequestAuthenticat
     @Override
     public AuthenticationContext authenticate(ContainerRequestContext requestContext) throws AuthenticationException {
         String authenticatorName = requestContext.getUriInfo().getQueryParameters().getFirst(configuration.getParameterName());
-        if (!AuthenticatorRegistry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
+        if (!registry.contains(authenticatorName, JaxrsRequestAuthenticator.class)) {
             return null;
         }
-        JaxrsRequestAuthenticator authenticator = AuthenticatorRegistry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
+        JaxrsRequestAuthenticator authenticator = registry.lookup(authenticatorName, JaxrsRequestAuthenticator.class);
         authenticators.set(authenticator);
         return authenticator.authenticate(requestContext);
     }

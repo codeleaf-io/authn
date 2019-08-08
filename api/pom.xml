@@ -19,6 +19,11 @@
             <artifactId>common-utils</artifactId>
             <version>${leaf-common.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.codeleaf.config</groupId>
+            <artifactId>config-api</artifactId>
+            <version>${leaf-config.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

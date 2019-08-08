@@ -1,5 +1,7 @@
 package io.codeleaf.authn.jaxrs;
 
+import io.codeleaf.authn.impl.AuthenticatorRegistries;
+import io.codeleaf.authn.impl.AuthenticatorRegistry;
 import io.codeleaf.config.Configuration;
 import io.codeleaf.config.ConfigurationNotFoundException;
 import io.codeleaf.config.spec.InvalidSpecificationException;
@@ -10,11 +12,13 @@ public final class AuthenticationConfiguration implements Configuration {
 
     private final List<Zone> zones;
     private final Map<String, Authenticator> authenticators;
+    private final AuthenticatorRegistry registry;
     private final HandshakeConfiguration handshake;
 
-    private AuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators, HandshakeConfiguration handshake) {
+    private AuthenticationConfiguration(List<Zone> zones, Map<String, Authenticator> authenticators, AuthenticatorRegistry registry, HandshakeConfiguration handshake) {
         this.zones = zones;
         this.authenticators = authenticators;
+        this.registry = registry;
         this.handshake = handshake;
     }
 
@@ -26,12 +30,18 @@ public final class AuthenticationConfiguration implements Configuration {
         return authenticators;
     }
 
-    public static AuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators, HandshakeConfiguration handshake) throws InvalidSpecificationException, ConfigurationNotFoundException {
+    public AuthenticatorRegistry getRegistry() {
+        return registry;
+    }
+
+    public static AuthenticationConfiguration create(List<Zone> zones, Map<String, Authenticator> authenticators, AuthenticatorRegistry registry, HandshakeConfiguration handshake) throws InvalidSpecificationException, ConfigurationNotFoundException {
         Objects.requireNonNull(zones);
         Objects.requireNonNull(authenticators);
+        Objects.requireNonNull(registry);
         return new AuthenticationConfiguration(
                 Collections.unmodifiableList(new ArrayList<>(zones)),
                 Collections.unmodifiableMap(new LinkedHashMap<>(authenticators)),
+                AuthenticatorRegistries.unmodifiableRegistry(registry),
                 handshake);
     }
 
