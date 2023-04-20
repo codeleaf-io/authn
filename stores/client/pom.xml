@@ -5,14 +5,18 @@
     <parent>
         <groupId>io.codeleaf.authn</groupId>
         <artifactId>authn</artifactId>
-        <version>0.1.0</version>
-        <relativePath>../..</relativePath>
+        <version>0.9.0</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>authn-stores-client</artifactId>
 
     <name>Authn :: Stores :: Client</name>
     <description>Client Session Data Store</description>
+
+    <properties>
+        <jjwt.version>0.11.5</jjwt.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -27,19 +31,18 @@
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.10.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.10.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>0.10.5</version>
-            <scope>runtime</scope>
+            <groupId>io.codeleaf.common</groupId>
+            <artifactId>common-libs-json</artifactId>
+            <version>${leaf-common.version}</version>
         </dependency>
     </dependencies>
 

@@ -8,11 +8,12 @@ import java.util.function.Supplier;
 public abstract class AuthenticationRegistryAwareConfigurationFactory<T extends Configuration> extends ContextAwareConfigurationFactory<T, AuthenticatorRegistry> {
 
     public AuthenticationRegistryAwareConfigurationFactory(Class<T> configurationTypeClass) {
-        super(configurationTypeClass, AuthenticatorRegistry.class);
+        super(configurationTypeClass, AuthenticatorRegistry.class, null, DefaultAuthenticatorRegistry::new);
     }
 
+    @SuppressWarnings("unchecked")
     public AuthenticationRegistryAwareConfigurationFactory(T defaultConfiguration) {
-        super(AuthenticatorRegistry.class, defaultConfiguration);
+        super((Class<T>) defaultConfiguration.getClass(), AuthenticatorRegistry.class, defaultConfiguration, DefaultAuthenticatorRegistry::new);
     }
 
     public AuthenticationRegistryAwareConfigurationFactory(Class<T> configurationTypeClass, Class<AuthenticatorRegistry> contextTypeClass, T defaultConfiguration, Supplier<AuthenticatorRegistry> defaultContextProvider) {

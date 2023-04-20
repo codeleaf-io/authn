@@ -1,8 +1,8 @@
 package io.codeleaf.authn.jaxrs.impl;
 
 import io.codeleaf.authn.jaxrs.spi.HandshakeState;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
@@ -20,10 +20,10 @@ public class HandshakeStateTest {
         HandshakeState result = HandshakeState.decode(encodedHandshakeState);
 
         // Then
-        Assert.assertEquals("abc:def/ghi", state.getUri().toString());
-        Assert.assertEquals(2, state.getAuthenticatorNames().size());
-        Assert.assertTrue(state.getAuthenticatorNames().contains("foo,"));
-        Assert.assertTrue(state.getAuthenticatorNames().contains("bar"));
+        Assertions.assertEquals("abc:def/ghi", state.getUri().toString());
+        Assertions.assertEquals(2, state.getAuthenticatorNames().size());
+        Assertions.assertTrue(state.getAuthenticatorNames().contains("foo,"));
+        Assertions.assertTrue(state.getAuthenticatorNames().contains("bar"));
     }
 
 }
